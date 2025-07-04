@@ -35,12 +35,12 @@ const disasterTheme = createTheme({
       light: "#ffb74d",
     },
     background: {
-      default: "#0a0a0a",
-      paper: "#1a1a1a",
+      default: "#f5f5f5",
+      paper: "#ffffff",
     },
     text: {
-      primary: "#ffffff",
-      secondary: "#cccccc",
+      primary: "#333333",
+      secondary: "#666666",
     },
     error: {
       main: "#f44336",
@@ -54,7 +54,7 @@ const disasterTheme = createTheme({
     h1: {
       fontWeight: 700,
       fontSize: "4rem",
-      textShadow: "2px 2px 4px rgba(0,0,0,0.5)",
+      textShadow: "2px 2px 4px rgba(0,0,0,0.2)",
     },
     h4: {
       fontWeight: 600,
@@ -72,7 +72,7 @@ const disasterTheme = createTheme({
           transition: "all 0.3s ease",
           "&:hover": {
             transform: "translateY(-2px)",
-            boxShadow: "0 8px 16px rgba(0,0,0,0.3)",
+            boxShadow: "0 8px 16px rgba(0,0,0,0.15)",
           },
         },
       },
@@ -84,7 +84,7 @@ const disasterTheme = createTheme({
           transition: "all 0.3s ease",
           "&:hover": {
             transform: "translateY(-4px)",
-            boxShadow: "0 12px 24px rgba(0,0,0,0.4)",
+            boxShadow: "0 12px 24px rgba(0,0,0,0.2)",
           },
         },
       },
@@ -126,10 +126,13 @@ const Home = () => {
     <ThemeProvider theme={disasterTheme}>
       <Box
         sx={{
-          minHeight: "100vh",
-          background: "linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 50%, #2a1a1a 100%)",
-          position: "relative",
-          overflow: "hidden",
+          height: "100vh",
+          width: "100vw",
+          background: "linear-gradient(135deg, #f0f4f8 0%, #e8f2f6 50%, #dbeafe 100%)",
+          position: "fixed",
+          top: 0,
+          left: 0,
+          overflow: "auto",
         }}
       >
         {/* Background Pattern */}
@@ -141,15 +144,26 @@ const Home = () => {
             right: 0,
             bottom: 0,
             backgroundImage: `
-              radial-gradient(circle at 20% 50%, rgba(255, 68, 68, 0.1) 0%, transparent 50%),
-              radial-gradient(circle at 80% 20%, rgba(33, 150, 243, 0.1) 0%, transparent 50%),
-              radial-gradient(circle at 40% 80%, rgba(141, 110, 99, 0.1) 0%, transparent 50%)
+              radial-gradient(circle at 20% 50%, rgba(255, 68, 68, 0.05) 0%, transparent 50%),
+              radial-gradient(circle at 80% 20%, rgba(33, 150, 243, 0.05) 0%, transparent 50%),
+              radial-gradient(circle at 40% 80%, rgba(141, 110, 99, 0.05) 0%, transparent 50%)
             `,
             zIndex: 0,
           }}
         />
 
-        <Container maxWidth="lg" sx={{ position: "relative", zIndex: 1, py: 4 }}>
+        <Container 
+          maxWidth="lg" 
+          sx={{ 
+            position: "relative", 
+            zIndex: 1, 
+            py: 4,
+            height: "100vh",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center"
+          }}
+        >
           {/* Header */}
           <Box textAlign="center" mb={6}>
             <Box display="flex" alignItems="center" justifyContent="center" mb={2}>
@@ -181,10 +195,10 @@ const Home = () => {
               sx={{
                 maxWidth: 600,
                 mx: "auto",
-                backgroundColor: "rgba(255, 152, 0, 0.1)",
-                border: "1px solid rgba(255, 152, 0, 0.3)",
+                backgroundColor: "rgba(33, 150, 243, 0.1)",
+                border: "1px solid rgba(33, 150, 243, 0.3)",
                 "& .MuiAlert-icon": {
-                  color: "#ff9800",
+                  color: "#2196f3",
                 },
               }}
             >
@@ -221,12 +235,12 @@ const Home = () => {
                       size="large"
                       onClick={() => navigate(disaster.route)}
                       sx={{
-                        backgroundColor: "rgba(255,255,255,0.2)",
-                        color: "white",
+                        backgroundColor: "rgba(255,255,255,0.9)",
+                        color: "#333333",
                         backdropFilter: "blur(10px)",
-                        border: "1px solid rgba(255,255,255,0.3)",
+                        border: "1px solid rgba(255,255,255,0.8)",
                         "&:hover": {
-                          backgroundColor: "rgba(255,255,255,0.3)",
+                          backgroundColor: "rgba(255,255,255,1)",
                           transform: "translateY(-2px)",
                         },
                       }}
@@ -245,9 +259,9 @@ const Home = () => {
               mt: 6,
               p: 3,
               textAlign: "center",
-              backgroundColor: "rgba(26, 26, 26, 0.8)",
+              backgroundColor: "rgba(255, 255, 255, 0.9)",
               backdropFilter: "blur(10px)",
-              border: "1px solid rgba(255,255,255,0.1)",
+              border: "1px solid rgba(0,0,0,0.1)",
             }}
           >
             <Typography variant="body2" color="text.secondary">
