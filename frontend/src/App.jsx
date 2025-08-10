@@ -5,6 +5,9 @@ import Home from './Home';
 import FireDashboard from './Fire_Disaster/FireDashboard';
 import FloodDashboard from './Flood Disaster/FloodDashboard';
 import LandslideDashboard from './Landslide_Disaster/LandslideDashboard';
+
+import RescueControl from './RescueControl'; // Make sure this import is correct
+
 import './App.css';
 
 function App() {
@@ -22,6 +25,8 @@ function App() {
           <Route path="/Fire_disaster/firedashboard" element={<FireDashboard />} />
           <Route path="/Flood_disaster/flooddashboard" element={<FloodDashboard />} />
           <Route path="/landslidedisaster/landslidedashboard" element={<LandslideDashboard />} />
+
+          <Route path="/rescue" element={<RescueControl />} /> {/* Add this route */}
           
           {/* Fallback route - redirect to home if no match */}
           <Route path="*" element={<Home />} />
