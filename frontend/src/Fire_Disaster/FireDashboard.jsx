@@ -32,15 +32,21 @@ import BASE_URL from '../common/baseurl';
 const fireTheme = createTheme({
   palette: {
     primary: {
-      main: '#d32f2f',
+      main: '#cc4a02',
+    },
+    secondary: {
+      main: '#DC143C',
     },
     background: {
-      default: '#f5f5f5',
+      default: '#F5F5DD',
       paper: '#ffffff',
     },
     text: {
-      primary: '#333333',
+      primary: '#34623f',
       secondary: '#666666',
+    },
+    info: {
+      main: '#1F51FF',
     },
   },
 });
@@ -139,39 +145,52 @@ const FireDashboard = () => {
     <ThemeProvider theme={fireTheme}>
       <Box
         sx={{
-          minHeight: '100vh',
-          background: 'linear-gradient(135deg, #f0f4f8 0%, #e8f2f6 50%, #dbeafe 100%)',
-          py: 4,
+          height: '100vh',
+          width: '100vw',
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          overflow: 'auto',
+          background: 'linear-gradient(135deg, #F5F5DD 0%, #f0f4f0 50%, #e8f2e8 100%)',
+          py: 2,
         }}
       >
-        <Container maxWidth="lg">
+        <Container maxWidth="xl" sx={{ height: '100%' }}>
           {/* Header */}
-          <Box display="flex" alignItems="center" mb={4}>
+          <Box display="flex" alignItems="center" mb={3}>
             <Button
               startIcon={<ArrowBack />}
               onClick={() => navigate('/')}
-              sx={{ color: '#d32f2f', mr: 2 }}
+              sx={{ 
+                color: '#cc4a02', 
+                mr: 2,
+                '&:hover': {
+                  backgroundColor: 'rgba(204, 74, 2, 0.1)',
+                }
+              }}
             >
               Back to Home
             </Button>
-            <LocalFireDepartment sx={{ fontSize: 40, mr: 2, color: '#d32f2f' }} />
-            <Typography variant="h4" component="h1" color="text.primary">
-              Fire Dashboard
+            <LocalFireDepartment sx={{ fontSize: 40, mr: 2, color: '#cc4a02' }} />
+            <Typography variant="h4" component="h1" sx={{ color: '#34623f', fontWeight: 600 }}>
+              Fire Emergency Dashboard
             </Typography>
           </Box>
 
-          <Grid container spacing={3}>
-            {/* Statistics */}
+          <Grid container spacing={2} sx={{ height: 'calc(100vh - 120px)' }}>
+            {/* Statistics Cards */}
             <Grid item xs={12} md={4}>
               <Card
                 sx={{
-                  background: 'linear-gradient(135deg, #f44336 0%, #d32f2f 100%)',
+                  background: 'linear-gradient(135deg, #cc4a02 0%, #a03902 100%)',
                   color: 'white',
+                  height: '150px',
+                  boxShadow: '0 4px 12px rgba(204, 74, 2, 0.3)',
                 }}
               >
-                <CardContent sx={{ textAlign: 'center' }}>
-                  <Typography variant="h6">Active Incidents</Typography>
-                  <Typography variant="h2">
+                <CardContent sx={{ textAlign: 'center', py: 3 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 600 }}>Active Fire Incidents</Typography>
+                  <Typography variant="h2" sx={{ fontWeight: 700 }}>
                     {fireData.filter((item) => item.flame).length}
                   </Typography>
                 </CardContent>
@@ -180,13 +199,15 @@ const FireDashboard = () => {
             <Grid item xs={12} md={4}>
               <Card
                 sx={{
-                  background: 'linear-gradient(135deg, #ff9800 0%, #f57c00 100%)',
+                  background: 'linear-gradient(135deg, #DC143C 0%, #b91230 100%)',
                   color: 'white',
+                  height: '150px',
+                  boxShadow: '0 4px 12px rgba(220, 20, 60, 0.3)',
                 }}
               >
-                <CardContent sx={{ textAlign: 'center' }}>
-                  <Typography variant="h6">MQ2 Alerts</Typography>
-                  <Typography variant="h2">
+                <CardContent sx={{ textAlign: 'center', py: 3 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 600 }}>MQ2 Gas Alerts</Typography>
+                  <Typography variant="h2" sx={{ fontWeight: 700 }}>
                     {fireData.filter((item) => item.mq2_ppm > 200).length}
                   </Typography>
                 </CardContent>
@@ -195,119 +216,194 @@ const FireDashboard = () => {
             <Grid item xs={12} md={4}>
               <Card
                 sx={{
-                  background: 'linear-gradient(135deg, #4caf50 0%, #388e3c 100%)',
+                  background: 'linear-gradient(135deg, #1F51FF 0%, #1a44d9 100%)',
                   color: 'white',
+                  height: '150px',
+                  boxShadow: '0 4px 12px rgba(31, 81, 255, 0.3)',
                 }}
               >
-                <CardContent sx={{ textAlign: 'center' }}>
-                  <Typography variant="h6">MQ7 Alerts</Typography>
-                  <Typography variant="h2">
+                <CardContent sx={{ textAlign: 'center', py: 3 }}>
+                  <Typography variant="h6" sx={{ fontWeight: 600 }}>MQ7 Gas Alerts</Typography>
+                  <Typography variant="h2" sx={{ fontWeight: 700 }}>
                     {fireData.filter((item) => item.mq7_ppm > 100).length}
                   </Typography>
                 </CardContent>
               </Card>
             </Grid>
 
-            {/* 🚨 Rescue Vehicle Alert Button */}
-            <Grid item xs={12}>
-              <Box textAlign="center" mb={2}>
-                {showRescueButton ? (
-                  <Button
-                    variant="contained"
-                    size="large"
-                    color={rescueActive ? "error" : "primary"}
-                    startIcon={<WarningAmber />}
-                    onClick={handleRescueClick}
-                    disabled={rescueLoading}
-                  >
-                    {rescueLoading
-                      ? "Processing..."
-                      : rescueActive
-                      ? "Deactivate Rescue Vehicle"
-                      : "Activate Rescue Vehicle"}
-                  </Button>
-                ) : showGasWarning ? (
-                  <Alert severity="warning" sx={{ maxWidth: 500, mx: "auto" }}>
-                    ⚠️ High gas levels detected (MQ2/MQ7). Monitor environment closely!
-                  </Alert>
-                ) : (
-                  <Alert severity="success" sx={{ maxWidth: 400, mx: "auto" }}>
-                    ✅ No fire or dangerous gas detected.
-                  </Alert>
-                )}
-              </Box>
+            {/* Control Panel */}
+            <Grid item xs={12} md={5}>
+              <Paper sx={{ p: 3, height: '100%', backgroundColor: '#ffffff', border: '2px solid #cc4a02' }}>
+                <Typography variant="h6" sx={{ mb: 3, color: '#34623f', fontWeight: 600 }}>
+                  Emergency Control Panel
+                </Typography>
 
-              {/* Fetch Latest Button */}
-              <Box textAlign="center" mb={2}>
-                <Button
-                  variant="outlined"
-                  color="primary"
-                  onClick={saveAndFetchLatest}
-                  disabled={latestLoading}
-                >
-                  {latestLoading ? 'Saving & Fetching...' : 'Save & Fetch Latest Reading'}
-                </Button>
-              </Box>
-
-              {/* Latest Data Card */}
-              {latestData && (
-                <Box textAlign="center" mt={2}>
-                  <Card sx={{ maxWidth: 500, mx: "auto", p: 2 }}>
-                    <Typography variant="h6">Latest Reading</Typography>
-                    <Typography variant="body1">
-                      <b>Time:</b> {new Date(latestData.timestamp).toLocaleString()}
-                    </Typography>
-                    <Typography variant="body1">
-                      <b>MQ2:</b> {latestData.mq2_ppm.toFixed(2)} PPM
-                    </Typography>
-                    <Typography variant="body1">
-                      <b>MQ7:</b> {latestData.mq7_ppm.toFixed(2)} PPM
-                    </Typography>
-                    <Typography variant="body1">
-                      <b>Flame:</b> {latestData.flame ? "🔥 Detected" : "✅ No Fire"}
-                    </Typography>
-                  </Card>
+                {/* Rescue Vehicle Button */}
+                <Box textAlign="center" mb={3}>
+                  {showRescueButton ? (
+                    <Button
+                      variant="contained"
+                      size="large"
+                      sx={{
+                        backgroundColor: rescueActive ? '#DC143C' : '#cc4a02',
+                        color: 'white',
+                        px: 4,
+                        py: 2,
+                        fontSize: '1.1rem',
+                        fontWeight: 600,
+                        '&:hover': {
+                          backgroundColor: rescueActive ? '#b91230' : '#a03902',
+                        },
+                      }}
+                      startIcon={<WarningAmber />}
+                      onClick={handleRescueClick}
+                      disabled={rescueLoading}
+                    >
+                      {rescueLoading
+                        ? "Processing..."
+                        : rescueActive
+                        ? "Deactivate Rescue Vehicle"
+                        : "🚨 ACTIVATE RESCUE VEHICLE"}
+                    </Button>
+                  ) : showGasWarning ? (
+                    <Alert 
+                      severity="warning" 
+                      sx={{ 
+                        backgroundColor: 'rgba(204, 74, 2, 0.1)',
+                        border: '1px solid #cc4a02',
+                        color: '#34623f',
+                      }}
+                    >
+                      ⚠️ High gas levels detected (MQ2/MQ7). Monitor environment closely!
+                    </Alert>
+                  ) : (
+                    <Alert 
+                      severity="success"
+                      sx={{ 
+                        backgroundColor: 'rgba(31, 81, 255, 0.1)',
+                        border: '1px solid #1F51FF',
+                        color: '#34623f',
+                      }}
+                    >
+                      ✅ No fire or dangerous gas detected. System Normal.
+                    </Alert>
+                  )}
                 </Box>
-              )}
+
+                {/* Fetch Latest Button */}
+                <Box textAlign="center" mb={3}>
+                  <Button
+                    variant="outlined"
+                    sx={{
+                      borderColor: '#1F51FF',
+                      color: '#1F51FF',
+                      px: 3,
+                      py: 1,
+                      fontWeight: 600,
+                      '&:hover': {
+                        backgroundColor: 'rgba(31, 81, 255, 0.1)',
+                        borderColor: '#1F51FF',
+                      },
+                    }}
+                    onClick={saveAndFetchLatest}
+                    disabled={latestLoading}
+                  >
+                    {latestLoading ? 'Saving & Fetching...' : 'Save & Fetch Latest Reading'}
+                  </Button>
+                </Box>
+
+                {/* Latest Data Display */}
+                {latestData && (
+                  <Card 
+                    sx={{ 
+                      p: 2, 
+                      backgroundColor: '#F5F5DD',
+                      border: '1px solid #34623f',
+                    }}
+                  >
+                    <Typography variant="h6" sx={{ color: '#34623f', fontWeight: 600, mb: 2 }}>
+                      Latest Sensor Reading
+                    </Typography>
+                    <Grid container spacing={2}>
+                      <Grid item xs={6}>
+                        <Typography variant="body2" sx={{ color: '#34623f' }}>
+                          <b>Time:</b> {new Date(latestData.timestamp).toLocaleString()}
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: '#34623f' }}>
+                          <b>MQ2:</b> {latestData.mq2_ppm.toFixed(2)} PPM
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={6}>
+                        <Typography variant="body2" sx={{ color: '#34623f' }}>
+                          <b>MQ7:</b> {latestData.mq7_ppm.toFixed(2)} PPM
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: '#34623f' }}>
+                          <b>Flame:</b> {latestData.flame ? "🔥 Detected" : "✅ No Fire"}
+                        </Typography>
+                      </Grid>
+                    </Grid>
+                  </Card>
+                )}
+              </Paper>
             </Grid>
 
             {/* Fire Data Table */}
-            <Grid item xs={12}>
-              <Paper sx={{ p: 3 }}>
+            <Grid item xs={12} md={7}>
+              <Paper sx={{ p: 3, height: '100%', backgroundColor: '#ffffff', border: '2px solid #1F51FF' }}>
                 <Box display="flex" alignItems="center" mb={3}>
-                  <Assessment sx={{ mr: 1, color: '#d32f2f' }} />
-                  <Typography variant="h6">Gas & Fire Logs</Typography>
+                  <Assessment sx={{ mr: 1, color: '#1F51FF' }} />
+                  <Typography variant="h6" sx={{ color: '#34623f', fontWeight: 600 }}>
+                    Fire & Gas Detection Logs
+                  </Typography>
                 </Box>
                 {loading ? (
                   <Box
                     display="flex"
                     justifyContent="center"
                     alignItems="center"
-                    minHeight="200px"
+                    minHeight="300px"
                   >
-                    <CircularProgress color="primary" />
+                    <CircularProgress sx={{ color: '#cc4a02' }} />
                   </Box>
                 ) : (
-                  <TableContainer>
-                    <Table>
+                  <TableContainer sx={{ maxHeight: '400px' }}>
+                    <Table stickyHeader>
                       <TableHead>
                         <TableRow>
-                          <TableCell><b>Timestamp</b></TableCell>
-                          <TableCell><b>MQ2 (PPM)</b></TableCell>
-                          <TableCell><b>MQ7 (PPM)</b></TableCell>
-                          <TableCell><b>Flame</b></TableCell>
+                          <TableCell sx={{ backgroundColor: '#F5F5DD', color: '#34623f', fontWeight: 600 }}>
+                            Timestamp
+                          </TableCell>
+                          <TableCell sx={{ backgroundColor: '#F5F5DD', color: '#34623f', fontWeight: 600 }}>
+                            MQ2 (PPM)
+                          </TableCell>
+                          <TableCell sx={{ backgroundColor: '#F5F5DD', color: '#34623f', fontWeight: 600 }}>
+                            MQ7 (PPM)
+                          </TableCell>
+                          <TableCell sx={{ backgroundColor: '#F5F5DD', color: '#34623f', fontWeight: 600 }}>
+                            Flame Status
+                          </TableCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
                         {fireData.map((row) => (
-                          <TableRow key={row._id}>
-                            <TableCell>{new Date(row.timestamp).toLocaleString()}</TableCell>
-                            <TableCell>{row.mq2_ppm.toFixed(2)}</TableCell>
-                            <TableCell>{row.mq7_ppm.toFixed(2)}</TableCell>
+                          <TableRow key={row._id} hover>
+                            <TableCell sx={{ color: '#34623f' }}>
+                              {new Date(row.timestamp).toLocaleString()}
+                            </TableCell>
+                            <TableCell sx={{ color: '#34623f' }}>
+                              {row.mq2_ppm.toFixed(2)}
+                            </TableCell>
+                            <TableCell sx={{ color: '#34623f' }}>
+                              {row.mq7_ppm.toFixed(2)}
+                            </TableCell>
                             <TableCell>
                               <Chip
-                                label={row.flame ? 'Detected' : 'No Fire'}
-                                color={row.flame ? 'error' : 'success'}
+                                label={row.flame ? '🔥 Fire Detected' : '✅ No Fire'}
+                                sx={{
+                                  backgroundColor: row.flame ? '#DC143C' : '#1F51FF',
+                                  color: 'white',
+                                  fontWeight: 600,
+                                }}
                                 size="small"
                               />
                             </TableCell>

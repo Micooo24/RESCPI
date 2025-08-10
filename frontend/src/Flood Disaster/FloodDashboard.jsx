@@ -1,266 +1,327 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import BASE_URL from '../common/baseurl';
+import BASE_URL from '../common/baseurl'; // Import the BASE_URL properly
 import {
   Container,
   Typography,
   Button,
   Box,
-  Paper,
+  Card,
+  CardContent,
   CircularProgress,
+  Alert,
   Stack,
+  Chip,
 } from '@mui/material';
-import { ArrowBack, Flood, Refresh, Height, DirectionsCar } from '@mui/icons-material';
-import { createTheme, ThemeProvider } from '@mui/material/styles';
+import { Water, Dashboard, Warning, CheckCircle, Refresh, WifiOff, Wifi } from '@mui/icons-material';
 
-// Custom theme
-const floodTheme = createTheme({
-  palette: {
-    primary: {
-      main: '#2196f3',
-    },
-    background: {
-      default: '#f5f5f5',
-      paper: '#ffffff',
-    },
-    text: {
-      primary: '#333333',
-      secondary: '#666666',
-    },
-  },
-});
+const WS_URL = 'ws://10.16.180.193:5000/flood/ws/frontend';
 
 const FloodDashboard = () => {
-  const navigate = useNavigate();
   const [floodData, setFloodData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [buttonLoading, setButtonLoading] = useState(false);
-  const [refreshLoading, setRefreshLoading] = useState(false);
-  const [latestDistance, setLatestDistance] = useState(null); // Latest distance
-  const [showRescueButton, setShowRescueButton] = useState(false); // Toggle Rescue Button
-  const [rescueActive, setRescueActive] = useState(false); // Rescue vehicle state
+  const [wsConnected, setWsConnected] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState('Disconnected');
+  
+  const wsRef = useRef(null);
+  const reconnectTimeoutRef = useRef(null);
+  const reconnectAttempts = useRef(0);
+  const maxReconnectAttempts = 5;
 
-  // Fetch latest flood data (full document)
-  const fetchFloodData = async () => {
+  // WebSocket connection management
+  const connectWebSocket = () => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      return;
+    }
+
     try {
-      setRefreshLoading(true);
-      const response = await axios.get(`${BASE_URL}/flood/latest`);
-      if (response.data.status === 'success') {
-        const data = response.data.data;
-        setFloodData(data);
+      setConnectionStatus('Connecting...');
+      wsRef.current = new WebSocket(WS_URL);
 
-        // Update latest distance
-        if (data.distance !== undefined) {
-          setLatestDistance(data.distance);
-
-          // Show Rescue button if water level is high (<= 4cm)
-          if (data.distance > 0 && data.distance <= 4) {
-            setShowRescueButton(true);
+      wsRef.current.onopen = () => {
+        console.log('✅ WebSocket connected to flood monitoring');
+        setWsConnected(true);
+        setConnectionStatus('Connected');
+        reconnectAttempts.current = 0;
+        
+        // Send a keep-alive message to maintain connection
+        const keepAlive = setInterval(() => {
+          if (wsRef.current?.readyState === WebSocket.OPEN) {
+            wsRef.current.send(JSON.stringify({ type: 'ping' }));
           } else {
-            setShowRescueButton(false);
+            clearInterval(keepAlive);
           }
+        }, 30000); // Keep alive every 30 seconds
+      };
+
+      wsRef.current.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          console.log('📨 Received flood data:', data);
+          
+          // Handle sensor data from ESP32
+          if (data.type === 'sensor' || data.distance !== undefined) {
+            setFloodData({
+              ...data,
+              timestamp: data.timestamp || new Date().toISOString()
+            });
+            setLoading(false);
+          }
+        } catch (error) {
+          console.error('❌ Error parsing WebSocket message:', error);
         }
-      } else {
-        console.error('⚠️ No data received:', response.data.message);
-        setShowRescueButton(false); // Hide if no data
-      }
+      };
+
+      wsRef.current.onerror = (error) => {
+        console.error('❌ WebSocket error:', error);
+        setWsConnected(false);
+        setConnectionStatus('Connection Error');
+      };
+
+      wsRef.current.onclose = (event) => {
+        console.log('🔌 WebSocket disconnected:', event.code, event.reason);
+        setWsConnected(false);
+        setConnectionStatus('Disconnected');
+        
+        // Auto-reconnect logic
+        if (reconnectAttempts.current < maxReconnectAttempts) {
+          scheduleReconnect();
+        } else {
+          setConnectionStatus('Failed to Connect');
+          // Fall back to REST API
+          fetchFloodDataREST();
+        }
+      };
+
     } catch (error) {
-      console.error('❌ Error fetching flood data:', error);
-      setShowRescueButton(false);
-    } finally {
-      setLoading(false);
-      setRefreshLoading(false);
+      console.error('❌ WebSocket connection failed:', error);
+      setWsConnected(false);
+      setConnectionStatus('Connection Failed');
+      scheduleReconnect();
     }
   };
 
-  // Fetch latest distance only
-  const fetchLatestDistance = async () => {
-    try {
-      setButtonLoading(true);
-      const response = await axios.get(`${BASE_URL}/flood/latest/distance`);
-      if (response.data.status === 'success') {
-        const distance = response.data.distance;
-        setLatestDistance(distance);
-        alert(`✅ Latest Distance: ${distance} cm`);
+  const scheduleReconnect = () => {
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+    }
+    
+    reconnectAttempts.current += 1;
+    const delay = Math.min(1000 * Math.pow(2, reconnectAttempts.current), 10000); // Exponential backoff
+    
+    setConnectionStatus(`Reconnecting... (${reconnectAttempts.current}/${maxReconnectAttempts})`);
+    
+    reconnectTimeoutRef.current = setTimeout(() => {
+      connectWebSocket();
+    }, delay);
+  };
 
-        // Update Rescue button visibility
-        if (distance > 0 && distance < 1) {
-          setShowRescueButton(true);
-        } else {
-          setShowRescueButton(false);
-        }
+  // Fallback REST API fetch
+  const fetchFloodDataREST = async (showLoading = true) => {
+    try {
+      if (showLoading) setLoading(true);
+      const response = await axios.get(`${BASE_URL}/flood/latest`);
+      if (response.data.status === 'success') {
+        setFloodData(response.data.data);
+        setConnectionStatus('REST API');
       } else {
-        alert('⚠️ No distance data found');
-        setShowRescueButton(false);
+        setFloodData(null);
+        setConnectionStatus('No Data');
       }
     } catch (error) {
-      console.error('❌ Error fetching latest distance:', error);
-      alert('Error fetching latest distance');
-      setShowRescueButton(false);
+      console.error('Error fetching flood data via REST:', error);
+      setConnectionStatus('API Error');
     } finally {
-      setButtonLoading(false);
+      if (showLoading) setLoading(false);
     }
+  };
+
+  // Close WebSocket connection
+  const disconnectWebSocket = () => {
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+    }
+    if (wsRef.current) {
+      wsRef.current.close();
+      wsRef.current = null;
+    }
+    setWsConnected(false);
   };
 
   useEffect(() => {
-    fetchFloodData();
+    // Try WebSocket first, fallback to REST
+    connectWebSocket();
+    
+    // Initial REST API call as backup
+    setTimeout(() => {
+      if (!wsConnected && !floodData) {
+        fetchFloodDataREST();
+      }
+    }, 5000);
+    
+    return () => {
+      disconnectWebSocket();
+    };
   }, []);
 
-  // Handle Enable/Disable Pump
+  // Toggle pump ON/OFF
   const togglePump = async () => {
     if (!floodData) return;
     setButtonLoading(true);
-
-    const newPumpState = floodData.pump === 'ON' ? 'OFF' : 'ON';
-    const controlUrl = newPumpState === 'ON'
-      ? `${BASE_URL}/flood/control/on`
-      : `${BASE_URL}/flood/control/off`;
+    const isPumpOn = floodData.pump === 'ON';
+    const url = isPumpOn ? `${BASE_URL}/flood/control/off` : `${BASE_URL}/flood/control/on`;
 
     try {
-      const response = await axios.post(controlUrl);
-
+      const response = await axios.post(url);
       if (response.data.status === 'success') {
-        alert(`✅ Pump turned ${newPumpState}`);
-        fetchFloodData(); // Refresh data after toggling
+        alert(`Pump turned ${isPumpOn ? 'OFF' : 'ON'}`);
+        
+        // If WebSocket is not connected, fetch updated data via REST
+        if (!wsConnected) {
+          setTimeout(() => fetchFloodDataREST(false), 500);
+        }
       } else {
-        alert('⚠️ Failed to update pump state');
+        alert('Failed to toggle pump');
       }
     } catch (error) {
-      console.error('❌ Error toggling pump:', error);
-      alert('Error communicating with server');
+      alert('Error toggling pump');
+      console.error(error);
     } finally {
       setButtonLoading(false);
     }
   };
 
-  // 🚨 Toggle Rescue Vehicle
-  const toggleRescueVehicle = async () => {
-    setButtonLoading(true);
-    const actionUrl = rescueActive
-      ? `${BASE_URL}/rescue/vehicle/off`
-      : `${BASE_URL}/rescue/vehicle/on`;
-
-    try {
-      const response = await axios.post(actionUrl);
-      if (response.data.status === 'success') {
-        setRescueActive(!rescueActive);
-        alert(`🚑 Rescue Vehicle turned ${rescueActive ? 'OFF' : 'ON'}`);
-      } else {
-        alert('⚠️ Failed to control rescue vehicle');
-      }
-    } catch (error) {
-      console.error('❌ Error toggling rescue vehicle:', error);
-      alert('Error controlling rescue vehicle');
-    } finally {
-      setButtonLoading(false);
+  // Manual refresh
+  const handleRefresh = () => {
+    if (wsConnected) {
+      // Reconnect WebSocket to get fresh data
+      disconnectWebSocket();
+      setTimeout(() => connectWebSocket(), 1000);
+    } else {
+      fetchFloodDataREST(true);
     }
+  };
+
+  // Determine alert status based on distance
+  const getAlertStatus = (distance) => {
+    if (distance === null || distance === undefined) return 'unknown';
+    if (distance <= 4) return 'critical';
+    if (distance <= 10) return 'warning';
+    return 'normal';
+  };
+
+  const alertColors = {
+    critical: '#DC143C',
+    warning: '#cc4a02',
+    normal: '#66FF00',
+    unknown: '#999999',
   };
 
   return (
-    <ThemeProvider theme={floodTheme}>
-      <Box
-        sx={{
-          minHeight: '100vh',
-          background: 'linear-gradient(135deg, #f0f4f8 0%, #e8f2f6 50%, #dbeafe 100%)',
-          py: 4,
-        }}
-      >
-        <Container maxWidth="sm">
-          {/* Header */}
-          <Box display="flex" alignItems="center" mb={4}>
+    <Container maxWidth="md" sx={{ mt: 4 }}>
+      {/* Header with Connection Status */}
+      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
+        <Typography variant="h4">
+          Flood Monitoring Dashboard
+        </Typography>
+        <Box display="flex" alignItems="center" gap={1}>
+          {wsConnected ? (
+            <Wifi sx={{ color: 'green' }} />
+          ) : (
+            <WifiOff sx={{ color: 'red' }} />
+          )}
+          <Typography variant="body2" color={wsConnected ? 'success.main' : 'error.main'}>
+            {connectionStatus}
+          </Typography>
+        </Box>
+      </Box>
+
+      {loading ? (
+        <Box display="flex" justifyContent="center" mt={10}>
+          <CircularProgress />
+        </Box>
+      ) : floodData ? (
+        <>
+          <Stack direction="row" spacing={2} mb={3}>
+            <Card sx={{ flex: 1, textAlign: 'center' }}>
+              <CardContent>
+                <Water sx={{ fontSize: 40, mb: 1, color: '#0077b6' }} />
+                <Typography variant="h6">Water Volume</Typography>
+                <Typography variant="h3">{floodData.liters ?? 0} L</Typography>
+                {floodData.distance && (
+                  <Typography variant="body2" color="text.secondary">
+                    {floodData.distance} cm depth
+                  </Typography>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card sx={{ flex: 1, textAlign: 'center' }}>
+              <CardContent>
+                <Dashboard sx={{ fontSize: 40, mb: 1, color: '#2d6a4f' }} />
+                <Typography variant="h6">Pump Status</Typography>
+                <Chip
+                  label={floodData.pump || 'OFF'}
+                  color={floodData.pump === 'ON' ? 'success' : 'error'}
+                  sx={{ fontWeight: 'bold', fontSize: '1rem' }}
+                />
+                {floodData.mode && (
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                    Mode: {floodData.mode}
+                  </Typography>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card sx={{ flex: 1, textAlign: 'center', backgroundColor: alertColors[getAlertStatus(floodData.distance)] + '22' }}>
+              <CardContent>
+                {getAlertStatus(floodData.distance) === 'critical' ? (
+                  <Warning sx={{ fontSize: 40, mb: 1, color: alertColors.critical }} />
+                ) : getAlertStatus(floodData.distance) === 'warning' ? (
+                  <Warning sx={{ fontSize: 40, mb: 1, color: alertColors.warning }} />
+                ) : (
+                  <CheckCircle sx={{ fontSize: 40, mb: 1, color: alertColors.normal }} />
+                )}
+                <Typography variant="h6">Alert Status</Typography>
+                <Typography variant="h3" sx={{ textTransform: 'uppercase', color: alertColors[getAlertStatus(floodData.distance)] }}>
+                  {getAlertStatus(floodData.distance)}
+                </Typography>
+              </CardContent>
+            </Card>
+          </Stack>
+
+          <Box textAlign="center" mb={4}>
             <Button
-              startIcon={<ArrowBack />}
-              onClick={() => navigate('/')}
-              sx={{ color: '#2196f3', mr: 2 }}
+              variant="contained"
+              color={floodData.pump === 'ON' ? 'error' : 'success'}
+              onClick={togglePump}
+              disabled={buttonLoading}
+              sx={{ mr: 2 }}
             >
-              Back to Home
+              {buttonLoading ? 'Processing...' : floodData.pump === 'ON' ? 'Turn Pump OFF' : 'Turn Pump ON'}
             </Button>
-            <Flood sx={{ fontSize: 40, mr: 2, color: '#2196f3' }} />
-            <Typography variant="h4" component="h1" color="text.primary">
-              Flood Dashboard
-            </Typography>
+            <Button 
+              variant="outlined" 
+              startIcon={<Refresh />} 
+              onClick={handleRefresh} 
+              disabled={loading}
+            >
+              Refresh Data
+            </Button>
           </Box>
 
-          {loading ? (
-            <Box display="flex" justifyContent="center" mt={5}>
-              <CircularProgress color="primary" />
-            </Box>
-          ) : floodData ? (
-            <Paper sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Latest Flood Data
-              </Typography>
-              <Typography><strong>_id:</strong> {floodData._id}</Typography>
-              <Typography><strong>Timestamp:</strong> {floodData.timestamp}</Typography>
-              <Typography><strong>Water Level:</strong> {floodData.distance} cm</Typography>
-              <Typography><strong>Pump Status:</strong> {floodData.pump}</Typography>
-              <Typography><strong>Mode:</strong> {floodData.mode}</Typography>
-
-              {/* Buttons */}
-              <Stack direction="row" spacing={2} mt={3} justifyContent="center" flexWrap="wrap">
-                <Button
-                  variant="outlined"
-                  startIcon={<Refresh />}
-                  onClick={fetchFloodData}
-                  disabled={refreshLoading}
-                  color="primary"
-                >
-                  {refreshLoading ? 'Refreshing...' : 'Refresh Data'}
-                </Button>
-
-                <Button
-                  variant="contained"
-                  color={floodData.pump === 'ON' ? 'error' : 'success'}
-                  onClick={togglePump}
-                  disabled={buttonLoading}
-                >
-                  {buttonLoading
-                    ? 'Processing...'
-                    : floodData.pump === 'ON'
-                    ? 'Disable Pump'
-                    : 'Enable Pump'}
-                </Button>
-
-                <Button
-                  variant="contained"
-                  color="secondary"
-                  startIcon={<Height />}
-                  onClick={fetchLatestDistance}
-                  disabled={buttonLoading}
-                >
-                  {buttonLoading ? 'Fetching...' : 'Latest Distance'}
-                </Button>
-
-                {/* 🚑 Rescue Vehicle Button */}
-                {showRescueButton && (
-                  <Button
-                    variant="contained"
-                    color={rescueActive ? 'error' : 'primary'}
-                    startIcon={<DirectionsCar />}
-                    onClick={toggleRescueVehicle}
-                    disabled={buttonLoading}
-                  >
-                    {rescueActive ? 'Disable Rescue Vehicle' : 'Enable Rescue Vehicle'}
-                  </Button>
-                )}
-              </Stack>
-
-              {/* Show latest distance fetched */}
-              {latestDistance !== null && (
-                <Typography variant="body1" mt={2} color="primary">
-                  📏 Latest Distance: {latestDistance} cm
-                </Typography>
-              )}
-            </Paper>
-          ) : (
-            <Typography color="textSecondary" align="center" mt={4}>
-              No flood data available.
-            </Typography>
-          )}
-        </Container>
-      </Box>
-    </ThemeProvider>
+          <Typography variant="body2" color="text.secondary" textAlign="center">
+            Last update: {new Date(floodData.timestamp).toLocaleString()}
+            {wsConnected && ' • Real-time via WebSocket'}
+          </Typography>
+        </>
+      ) : (
+        <Alert severity="warning">
+          No flood data available. ESP32 may not be connected.
+        </Alert>
+      )}
+    </Container>
   );
 };
 

@@ -1,0 +1,29 @@
+#34623f - secondary
+F5F5DD - Primary Color
+#ff6801 - third color 
+
+
+
+fire server
+#cc4a02 - primary
+#DC143C -secondary
+#1F51FF  third 
+
+
+landslide server
+#cc4a02  primary
+#66FF00 - secondary
+#1F51FF  - third 
+
+
+flood server 
+#cc4a02  primary
+#66FF00 - secondary
+#1F51FF  - third 
+
+
+
+units 
+flood - cm
+landslide - feet
+flame - ppm
