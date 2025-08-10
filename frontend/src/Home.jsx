@@ -1,4 +1,4 @@
-import React, { useRef } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Container,
@@ -25,17 +25,16 @@ import {
   Fullscreen,
   FullscreenExit,
   Close,
+  Refresh,
 } from "@mui/icons-material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
-import { Line, Doughnut, Bar, Pie } from 'react-chartjs-2';
+import { Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
   CategoryScale,
   LinearScale,
   PointElement,
   LineElement,
-  BarElement,
-  ArcElement,
   Title,
   Tooltip as ChartTooltip,
   Legend,
@@ -48,8 +47,6 @@ ChartJS.register(
   LinearScale,
   PointElement,
   LineElement,
-  BarElement,
-  ArcElement,
   Title,
   ChartTooltip,
   Legend,
@@ -77,8 +74,16 @@ const minimalTheme = createTheme({
 const Home = () => {
   const navigate = useNavigate();
   const chartSectionRef = useRef(null);
-  const [isExpanded, setIsExpanded] = React.useState(false);
-  const [isFullScreen, setIsFullScreen] = React.useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [isFullScreen, setIsFullScreen] = useState(false);
+  const [floodData, setFloodData] = useState([]);
+  const [landslideData, setLandslideData] = useState([]);
+  const [gasFireData, setGasFireData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [wsConnection, setWsConnection] = useState(null);
+  const [landslideWsConnection, setLandslideWsConnection] = useState(null);
+  const [gasFireWsConnection, setGasFireWsConnection] = useState(null);
 
   // Disaster type cards with new color schemes
   const disasterTypes = [
@@ -121,84 +126,534 @@ const Home = () => {
     { type: "Landslide", location: "Hill Road", status: "Monitoring" },
   ];
 
-  // Chart Data
-  const fireIncidentsData = {
-    labels: ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7'],
-    datasets: [
-      {
-        label: 'Fire Incidents',
-        data: [2, 5, 3, 8, 6, 4, 7],
-        backgroundColor: 'rgba(204, 74, 2, 0.6)',
-        borderColor: '#cc4a02',
-        borderWidth: 3,
-        tension: 0.4,
+  // Fetch flood data from API
+  const fetchFloodData = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('http://10.16.180.193:5000/flood/latest');
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-    ],
-  };
-
-  const floodWaterLevelData = {
-    labels: ['00:00', '04:00', '08:00', '12:00', '16:00', '20:00', '24:00'],
-    datasets: [
-      {
-        label: 'Water Level (cm)',
-        data: [15, 18, 22, 25, 28, 24, 20],
-        backgroundColor: 'rgba(31, 81, 255, 0.3)',
-        borderColor: '#1F51FF',
-        borderWidth: 3,
-        fill: true,
-        tension: 0.4,
+      
+      const result = await response.json();
+      
+      if (result.status === 'success' && result.data) {
+        setFloodData(prevData => {
+          const newData = [...prevData, result.data];
+          return newData.slice(-50);
+        });
       }
-    ],
+      
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching flood data:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const landslideAlertData = {
-    labels: ['Normal', 'Low Risk', 'Medium Risk', 'High Risk', 'Critical'],
-    datasets: [{
-      data: [45, 25, 15, 10, 5],
-      backgroundColor: [
-        '#66FF00',
-        '#1F51FF', 
-        '#cc4a02',
-        '#DC143C',
-        '#8B0000'
+  // Fetch landslide data from API
+  const fetchLandslideData = async () => {
+    try {
+      const response = await fetch('http://10.16.180.193:5000/landslide/all');
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      
+      if (result.status === 'success' && result.data) {
+        setLandslideData(result.data.slice(0, 50)); // Get latest 50 data points
+      }
+      
+    } catch (err) {
+      console.error('Error fetching landslide data:', err);
+      setError(err.message);
+    }
+  };
+
+    const fetchGasFireData = async () => {
+    try {
+      const response = await fetch('http://10.16.180.193:5000/gasfire/all');
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const result = await response.json();
+      
+      if (result.status === 'success' && result.data) {
+        setGasFireData(result.data.slice(0, 50)); // Get latest 50 data points
+      }
+      
+    } catch (err) {
+      console.error('Error fetching gas fire data:', err);
+      setError(err.message);
+    }
+  };
+
+  // Setup WebSocket connection for flood real-time data
+  const setupFloodWebSocket = () => {
+    try {
+      const ws = new WebSocket('ws://localhost:8000/flood/ws/frontend');
+      
+      ws.onopen = () => {
+        console.log('Flood WebSocket connected');
+        setError(null);
+      };
+      
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          
+          if (data.type === 'ping') {
+            ws.send(JSON.stringify({ type: 'pong' }));
+            return;
+          }
+          
+          if (data.type === 'sensor' || data.distance !== undefined) {
+            setFloodData(prevData => {
+              const newData = [...prevData, data];
+              return newData.slice(-50);
+            });
+          }
+        } catch (err) {
+          console.error('Error parsing Flood WebSocket message:', err);
+        }
+      };
+      
+      ws.onclose = () => {
+        console.log('Flood WebSocket disconnected');
+        setTimeout(setupFloodWebSocket, 3000);
+      };
+      
+      ws.onerror = (error) => {
+        console.error('Flood WebSocket error:', error);
+      };
+      
+      setWsConnection(ws);
+      
+      const pingInterval = setInterval(() => {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: 'ping' }));
+        }
+      }, 30000);
+      
+      return () => {
+        clearInterval(pingInterval);
+        ws.close();
+      };
+    } catch (err) {
+      console.error('Error setting up Flood WebSocket:', err);
+    }
+  };
+
+  // Setup WebSocket connection for landslide real-time data
+  const setupLandslideWebSocket = () => {
+    try {
+      const ws = new WebSocket('ws://localhost:8000/landslide/ws/frontend');
+      
+      ws.onopen = () => {
+        console.log('Landslide WebSocket connected');
+      };
+      
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          
+          if (data.type === 'ping') {
+            ws.send(JSON.stringify({ type: 'pong' }));
+            return;
+          }
+          
+          if (data.type === 'sensor' || data.accel_x !== undefined) {
+            setLandslideData(prevData => {
+              const newData = [data, ...prevData];
+              return newData.slice(0, 50);
+            });
+          }
+        } catch (err) {
+          console.error('Error parsing Landslide WebSocket message:', err);
+        }
+      };
+      
+      ws.onclose = () => {
+        console.log('Landslide WebSocket disconnected');
+        setTimeout(setupLandslideWebSocket, 3000);
+      };
+      
+      ws.onerror = (error) => {
+        console.error('Landslide WebSocket error:', error);
+      };
+      
+      setLandslideWsConnection(ws);
+      
+      const pingInterval = setInterval(() => {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: 'ping' }));
+        }
+      }, 30000);
+      
+      return () => {
+        clearInterval(pingInterval);
+        ws.close();
+      };
+    } catch (err) {
+      console.error('Error setting up Landslide WebSocket:', err);
+    }
+  };
+
+  const setupGasFireWebSocket = () => {
+    try {
+      const ws = new WebSocket('ws://localhost:8000/gasfire/ws/frontend');
+      
+      ws.onopen = () => {
+        console.log('Gas Fire WebSocket connected');
+      };
+      
+      ws.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          
+          if (data.type === 'ping') {
+            ws.send(JSON.stringify({ type: 'pong' }));
+            return;
+          }
+          
+          if (data.type === 'sensor' || data.mq2_ppm !== undefined) {
+            setGasFireData(prevData => {
+              const newData = [data, ...prevData];
+              return newData.slice(0, 50);
+            });
+          }
+        } catch (err) {
+          console.error('Error parsing Gas Fire WebSocket message:', err);
+        }
+      };
+      
+      ws.onclose = () => {
+        console.log('Gas Fire WebSocket disconnected');
+        setTimeout(setupGasFireWebSocket, 3000);
+      };
+      
+      ws.onerror = (error) => {
+        console.error('Gas Fire WebSocket error:', error);
+      };
+      
+      setGasFireWsConnection(ws);
+      
+      const pingInterval = setInterval(() => {
+        if (ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ type: 'ping' }));
+        }
+      }, 30000);
+      
+      return () => {
+        clearInterval(pingInterval);
+        ws.close();
+      };
+    } catch (err) {
+      console.error('Error setting up Gas Fire WebSocket:', err);
+    }
+  };
+
+  
+  // Initialize data fetching and WebSocket
+  useEffect(() => {
+    fetchFloodData();
+    fetchLandslideData();
+    fetchGasFireData();
+    const floodCleanup = setupFloodWebSocket();
+    const landslideCleanup = setupLandslideWebSocket();
+    const gasFireCleanup = setupGasFireWebSocket();
+    
+    return () => {
+      if (floodCleanup) floodCleanup();
+      if (landslideCleanup) landslideCleanup();
+      if (gasFireCleanup) gasFireCleanup();
+    };
+  }, []);
+
+  // Prepare chart data from flood data
+  const prepareFloodChartData = () => {
+    if (!floodData || floodData.length === 0) {
+      return {
+        labels: [],
+        datasets: []
+      };
+    }
+
+    const labels = floodData.map(item => {
+      const date = new Date(item.timestamp);
+      return date.toLocaleTimeString('en-US', { 
+        hour12: false, 
+        hour: '2-digit', 
+        minute: '2-digit',
+        second: '2-digit'
+      });
+    });
+
+    const distanceData = floodData.map(item => item.distance || 0);
+    const litersData = floodData.map(item => item.liters || 0);
+
+    return {
+      labels,
+      datasets: [
+        {
+          label: 'Distance (cm)',
+          data: distanceData,
+          backgroundColor: 'rgba(31, 81, 255, 0.3)',
+          borderColor: '#1F51FF',
+          borderWidth: 3,
+          fill: false,
+          tension: 0.4,
+          yAxisID: 'y',
+          pointBackgroundColor: '#1F51FF',
+          pointBorderColor: '#ffffff',
+          pointBorderWidth: 2,
+          pointRadius: 4,
+          pointHoverRadius: 8,
+        },
+        {
+          label: 'Water Volume (L)',
+          data: litersData,
+          backgroundColor: 'rgba(102, 255, 0, 0.3)',
+          borderColor: '#66FF00',
+          borderWidth: 3,
+          fill: false,
+          tension: 0.4,
+          yAxisID: 'y1',
+          pointBackgroundColor: '#66FF00',
+          pointBorderColor: '#ffffff',
+          pointBorderWidth: 2,
+          pointRadius: 4,
+          pointHoverRadius: 8,
+        }
       ],
-      borderColor: '#ffffff',
-      borderWidth: 3,
-    }],
+    };
   };
 
-  const overallStatusData = {
-    labels: ['Fire Incidents', 'Flood Warnings', 'Landslide Alerts'],
-    datasets: [{
-      data: [35, 40, 25],
-      backgroundColor: [
-        '#cc4a02',
-        '#1F51FF',
-        '#66FF00'
+  // Prepare chart data from landslide data
+  const prepareLandslideChartData = () => {
+    if (!landslideData || landslideData.length === 0) {
+      return {
+        labels: [],
+        datasets: []
+      };
+    }
+
+    const labels = landslideData.map(item => {
+      const date = new Date(item.timestamp);
+      return date.toLocaleTimeString('en-US', { 
+        hour12: false, 
+        hour: '2-digit', 
+        minute: '2-digit',
+        second: '2-digit'
+      });
+    }).reverse(); // Reverse to show chronological order
+
+    const accelXData = landslideData.map(item => item.accel_x || 0).reverse();
+    const accelYData = landslideData.map(item => item.accel_y || 0).reverse();
+    const accelZData = landslideData.map(item => item.accel_z || 0).reverse();
+    const dropData = landslideData.map(item => item.drop_ft || 0).reverse();
+
+    return {
+      labels,
+      datasets: [
+        {
+          label: 'Accel X',
+          data: accelXData,
+          backgroundColor: 'rgba(220, 20, 60, 0.3)',
+          borderColor: '#DC143C',
+          borderWidth: 2,
+          fill: false,
+          tension: 0.4,
+          yAxisID: 'y',
+          pointBackgroundColor: '#DC143C',
+          pointBorderColor: '#ffffff',
+          pointBorderWidth: 2,
+          pointRadius: 3,
+          pointHoverRadius: 6,
+        },
+        {
+          label: 'Accel Y',
+          data: accelYData,
+          backgroundColor: 'rgba(255, 165, 0, 0.3)',
+          borderColor: '#FFA500',
+          borderWidth: 2,
+          fill: false,
+          tension: 0.4,
+          yAxisID: 'y',
+          pointBackgroundColor: '#FFA500',
+          pointBorderColor: '#ffffff',
+          pointBorderWidth: 2,
+          pointRadius: 3,
+          pointHoverRadius: 6,
+        },
+        {
+          label: 'Accel Z',
+          data: accelZData,
+          backgroundColor: 'rgba(128, 0, 128, 0.3)',
+          borderColor: '#800080',
+          borderWidth: 2,
+          fill: false,
+          tension: 0.4,
+          yAxisID: 'y',
+          pointBackgroundColor: '#800080',
+          pointBorderColor: '#ffffff',
+          pointBorderWidth: 2,
+          pointRadius: 3,
+          pointHoverRadius: 6,
+        },
+        {
+          label: 'Drop Height (ft)',
+          data: dropData,
+          backgroundColor: 'rgba(139, 69, 19, 0.3)',
+          borderColor: '#8B4513',
+          borderWidth: 3,
+          fill: false,
+          tension: 0.4,
+          yAxisID: 'y1',
+          pointBackgroundColor: '#8B4513',
+          pointBorderColor: '#ffffff',
+          pointBorderWidth: 2,
+          pointRadius: 4,
+          pointHoverRadius: 8,
+        }
       ],
-      borderColor: '#ffffff',
-      borderWidth: 3,
-    }],
+    };
   };
 
-  const chartOptions = {
+    const prepareGasFireChartData = () => {
+    if (!gasFireData || gasFireData.length === 0) {
+      return {
+        labels: [],
+        datasets: []
+      };
+    }
+
+    const labels = gasFireData.map(item => {
+      const date = new Date(item.timestamp);
+      return date.toLocaleTimeString('en-US', { 
+        hour12: false, 
+        hour: '2-digit', 
+        minute: '2-digit',
+        second: '2-digit'
+      });
+    }).reverse(); // Reverse to show chronological order
+
+    const mq2Data = gasFireData.map(item => item.mq2_ppm || 0).reverse();
+    const mq7Data = gasFireData.map(item => item.mq7_ppm || 0).reverse();
+    const flameData = gasFireData.map(item => item.flame ? 1000 : 0).reverse(); // Show flame as high value for visibility
+
+    return {
+      labels,
+      datasets: [
+        {
+          label: 'MQ2 Gas (ppm)',
+          data: mq2Data,
+          backgroundColor: 'rgba(255, 99, 132, 0.3)',
+          borderColor: '#FF6384',
+          borderWidth: 3,
+          fill: false,
+          tension: 0.4,
+          yAxisID: 'y',
+          pointBackgroundColor: '#FF6384',
+          pointBorderColor: '#ffffff',
+          pointBorderWidth: 2,
+          pointRadius: 4,
+          pointHoverRadius: 8,
+        },
+        {
+          label: 'MQ7 Carbon Monoxide (ppm)',
+          data: mq7Data,
+          backgroundColor: 'rgba(255, 159, 64, 0.3)',
+          borderColor: '#FF9F40',
+          borderWidth: 3,
+          fill: false,
+          tension: 0.4,
+          yAxisID: 'y',
+          pointBackgroundColor: '#FF9F40',
+          pointBorderColor: '#ffffff',
+          pointBorderWidth: 2,
+          pointRadius: 4,
+          pointHoverRadius: 8,
+        },
+        {
+          label: 'Flame Detection',
+          data: flameData,
+          backgroundColor: 'rgba(255, 0, 0, 0.5)',
+          borderColor: '#FF0000',
+          borderWidth: 4,
+          fill: false,
+          tension: 0,
+          yAxisID: 'y1',
+          pointBackgroundColor: '#FF0000',
+          pointBorderColor: '#ffffff',
+          pointBorderWidth: 3,
+          pointRadius: 6,
+          pointHoverRadius: 10,
+          stepped: true, // Make it look like digital signal
+        }
+      ],
+    };
+  };
+
+  const floodChartOptions = {
     responsive: true,
     maintainAspectRatio: false,
+    interaction: {
+      mode: 'index',
+      intersect: false,
+    },
     plugins: {
       legend: {
-        position: 'bottom',
+        position: 'top',
         labels: {
           color: '#34623f',
           font: {
-            size: isFullScreen ? 14 : 10,
+            size: isFullScreen ? 14 : 12,
             weight: 'bold'
+          }
+        }
+      },
+      tooltip: {
+        backgroundColor: 'rgba(52, 98, 63, 0.95)',
+        titleColor: '#ffffff',
+        bodyColor: '#ffffff',
+        borderColor: '#34623f',
+        borderWidth: 1,
+        callbacks: {
+          afterBody: function(context) {
+            const dataIndex = context[0].dataIndex;
+            if (floodData[dataIndex]) {
+              const item = floodData[dataIndex];
+              return [
+                `Pump: ${item.pump || 'OFF'}`,
+                `Mode: ${item.mode || 'AUTO'}`,
+                `Time: ${new Date(item.timestamp).toLocaleString()}`
+              ];
+            }
+            return [];
           }
         }
       }
     },
     scales: {
-      y: {
-        beginAtZero: true,
+      x: {
+        display: true,
+        title: {
+          display: true,
+          text: 'Time',
+          color: '#34623f',
+          font: {
+            size: isFullScreen ? 14 : 12,
+            weight: 'bold'
+          }
+        },
         ticks: {
           color: '#34623f',
           font: {
@@ -209,7 +664,110 @@ const Home = () => {
           color: 'rgba(52, 98, 63, 0.1)'
         }
       },
+      y: {
+        type: 'linear',
+        display: true,
+        position: 'left',
+        title: {
+          display: true,
+          text: 'Distance (cm)',
+          color: '#1F51FF',
+          font: {
+            size: isFullScreen ? 14 : 12,
+            weight: 'bold'
+          }
+        },
+        ticks: {
+          color: '#1F51FF',
+          font: {
+            size: isFullScreen ? 12 : 10
+          }
+        },
+        grid: {
+          color: 'rgba(31, 81, 255, 0.1)'
+        }
+      },
+      y1: {
+        type: 'linear',
+        display: true,
+        position: 'right',
+        title: {
+          display: true,
+          text: 'Water Volume (L)',
+          color: '#66FF00',
+          font: {
+            size: isFullScreen ? 14 : 12,
+            weight: 'bold'
+          }
+        },
+        ticks: {
+          color: '#66FF00',
+          font: {
+            size: isFullScreen ? 12 : 10
+          }
+        },
+        grid: {
+          drawOnChartArea: false,
+        },
+      },
+    },
+  };
+
+  const landslideChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: {
+      mode: 'index',
+      intersect: false,
+    },
+    plugins: {
+      legend: {
+        position: 'top',
+        labels: {
+          color: '#34623f',
+          font: {
+            size: isFullScreen ? 14 : 12,
+            weight: 'bold'
+          }
+        }
+      },
+      tooltip: {
+        backgroundColor: 'rgba(52, 98, 63, 0.95)',
+        titleColor: '#ffffff',
+        bodyColor: '#ffffff',
+        borderColor: '#34623f',
+        borderWidth: 1,
+        callbacks: {
+          afterBody: function(context) {
+            const dataIndex = context[0].dataIndex;
+            const reversedIndex = landslideData.length - 1 - dataIndex;
+            if (landslideData[reversedIndex]) {
+              const item = landslideData[reversedIndex];
+              return [
+                `Servo1: ${item.servo1 ? 'ON' : 'OFF'}`,
+                `Servo2: ${item.servo2 ? 'ON' : 'OFF'}`,
+                `Status: ${item.status || 'normal'}`,
+                `Height: ${item.sensor_height_ft}ft`,
+                `Time: ${new Date(item.timestamp).toLocaleString()}`
+              ];
+            }
+            return [];
+          }
+        }
+      }
+    },
+    scales: {
       x: {
+        display: true,
+        title: {
+          display: true,
+          text: 'Time',
+          color: '#34623f',
+          font: {
+            size: isFullScreen ? 14 : 12,
+            weight: 'bold'
+          }
+        },
         ticks: {
           color: '#34623f',
           font: {
@@ -219,29 +777,184 @@ const Home = () => {
         grid: {
           color: 'rgba(52, 98, 63, 0.1)'
         }
-      }
-    }
+      },
+      y: {
+        type: 'linear',
+        display: true,
+        position: 'left',
+        title: {
+          display: true,
+          text: 'Acceleration',
+          color: '#DC143C',
+          font: {
+            size: isFullScreen ? 14 : 12,
+            weight: 'bold'
+          }
+        },
+        ticks: {
+          color: '#DC143C',
+          font: {
+            size: isFullScreen ? 12 : 10
+          }
+        },
+        grid: {
+          color: 'rgba(220, 20, 60, 0.1)'
+        }
+      },
+      y1: {
+        type: 'linear',
+        display: true,
+        position: 'right',
+        title: {
+          display: true,
+          text: 'Drop Height (ft)',
+          color: '#8B4513',
+          font: {
+            size: isFullScreen ? 14 : 12,
+            weight: 'bold'
+          }
+        },
+        ticks: {
+          color: '#8B4513',
+          font: {
+            size: isFullScreen ? 12 : 10
+          }
+        },
+        grid: {
+          drawOnChartArea: false,
+        },
+      },
+    },
   };
 
-  const pieOptions = {
+   const gasFireChartOptions = {
     responsive: true,
     maintainAspectRatio: false,
+    interaction: {
+      mode: 'index',
+      intersect: false,
+    },
     plugins: {
       legend: {
-        position: 'bottom',
+        position: 'top',
         labels: {
           color: '#34623f',
           font: {
-            size: isFullScreen ? 14 : 10,
+            size: isFullScreen ? 14 : 12,
             weight: 'bold'
           }
         }
+      },
+      tooltip: {
+        backgroundColor: 'rgba(52, 98, 63, 0.95)',
+        titleColor: '#ffffff',
+        bodyColor: '#ffffff',
+        borderColor: '#34623f',
+        borderWidth: 1,
+        callbacks: {
+          afterBody: function(context) {
+            const dataIndex = context[0].dataIndex;
+            const reversedIndex = gasFireData.length - 1 - dataIndex;
+            if (gasFireData[reversedIndex]) {
+              const item = gasFireData[reversedIndex];
+              return [
+                `Device: ${item.device || 'ESP32_GasFire'}`,
+                `Status: ${item.status || 'normal'}`,
+                `WiFi RSSI: ${item.wifi_rssi || 'N/A'}dBm`,
+                `Uptime: ${item.uptime_ms ? Math.floor(item.uptime_ms / 1000) : 'N/A'}s`,
+                `Time: ${new Date(item.timestamp).toLocaleString()}`
+              ];
+            }
+            return [];
+          }
+        }
       }
-    }
+    },
+    scales: {
+      x: {
+        display: true,
+        title: {
+          display: true,
+          text: 'Time',
+          color: '#34623f',
+          font: {
+            size: isFullScreen ? 14 : 12,
+            weight: 'bold'
+          }
+        },
+        ticks: {
+          color: '#34623f',
+          font: {
+            size: isFullScreen ? 12 : 10
+          }
+        },
+        grid: {
+          color: 'rgba(52, 98, 63, 0.1)'
+        }
+      },
+      y: {
+        type: 'linear',
+        display: true,
+        position: 'left',
+        title: {
+          display: true,
+          text: 'Gas Concentration (ppm)',
+          color: '#FF6384',
+          font: {
+            size: isFullScreen ? 14 : 12,
+            weight: 'bold'
+          }
+        },
+        ticks: {
+          color: '#FF6384',
+          font: {
+            size: isFullScreen ? 12 : 10
+          }
+        },
+        grid: {
+          color: 'rgba(255, 99, 132, 0.1)'
+        }
+      },
+      y1: {
+        type: 'linear',
+        display: true,
+        position: 'right',
+        title: {
+          display: true,
+          text: 'Flame Detection',
+          color: '#FF0000',
+          font: {
+            size: isFullScreen ? 14 : 12,
+            weight: 'bold'
+          }
+        },
+        ticks: {
+          color: '#FF0000',
+          font: {
+            size: isFullScreen ? 12 : 10
+          },
+          callback: function(value) {
+            return value === 1000 ? 'FIRE' : value === 0 ? 'SAFE' : value;
+          }
+        },
+        grid: {
+          drawOnChartArea: false,
+        },
+        min: 0,
+        max: 1200
+      },
+    },
+  };
+
+  // Refresh data
+  const handleRefreshData = () => {
+    fetchFloodData();
+    fetchLandslideData();
+    fetchGasFireData();
   };
 
   // Print function for charts
-  const handlePrintCharts = () => {
+    const handlePrintCharts = () => {
     const printWindow = window.open('', '_blank');
     const chartSection = chartSectionRef.current;
     
@@ -250,7 +963,7 @@ const Home = () => {
         <!DOCTYPE html>
         <html>
         <head>
-          <title>RESCPI Emergency Analytics Dashboard</title>
+          <title>RESCPI Monitoring Dashboard</title>
           <style>
             @media print {
               body { 
@@ -271,18 +984,6 @@ const Home = () => {
                 padding: 15px;
                 border-radius: 8px;
               }
-              .chart-grid {
-                display: grid;
-                grid-template-columns: repeat(2, 1fr);
-                gap: 20px;
-                margin-bottom: 20px;
-              }
-              .chart-title {
-                font-weight: bold;
-                font-size: 16px;
-                margin-bottom: 10px;
-                color: #34623f;
-              }
               @page {
                 margin: 1in;
                 size: landscape;
@@ -292,8 +993,11 @@ const Home = () => {
         </head>
         <body>
           <div class="print-header">
-            <h1>RESCPI Emergency Analytics Dashboard</h1>
+            <h1>RESCPI Monitoring Dashboard</h1>
             <p>Generated on: ${new Date().toLocaleString()}</p>
+            <p>Flood Data Points: ${floodData.length}</p>
+            <p>Landslide Data Points: ${landslideData.length}</p>
+            <p>Gas/Fire Data Points: ${gasFireData.length}</p>
           </div>
           ${chartSection.innerHTML}
         </body>
@@ -339,7 +1043,7 @@ const Home = () => {
             px: { xs: 2, sm: 3, md: 4 },
           }}
         >
-          {/* Balanced Header Section */}
+          {/* Header Section */}
           <Box sx={{ textAlign: "center", mb: { xs: 4, md: 5 } }}>
             <Typography
               variant="h3"
@@ -366,7 +1070,7 @@ const Home = () => {
             </Typography>
           </Box>
 
-          {/* Balanced House Cards Section */}
+          {/* House Cards Section */}
           <Box 
             sx={{ 
               display: "grid",
@@ -603,7 +1307,7 @@ const Home = () => {
             ))}
           </Box>
 
-          {/* Balanced Charts Section */}
+          {/* Monitoring Charts Section */}
           <Box 
             ref={chartSectionRef}
             sx={{ 
@@ -613,7 +1317,7 @@ const Home = () => {
               transition: "all 0.3s ease",
             }}
           >
-            {/* Chart Header */}
+            {/* Charts Header */}
             <Box sx={{ 
               display: "flex", 
               alignItems: "center", 
@@ -623,7 +1327,7 @@ const Home = () => {
               gap: 2,
             }}>
               <Box sx={{ display: "flex", alignItems: "center", flexWrap: "wrap" }}>
-                <BarChart sx={{ fontSize: { xs: 24, md: 30 }, mr: 2, color: "#34623f" }} />
+                <BarChart sx={{ fontSize: { xs: 24, md: 30 }, mr: 2, color: "#cc4a02" }} />
                 <Typography
                   variant="h4"
                   sx={{ 
@@ -632,12 +1336,32 @@ const Home = () => {
                     fontSize: { xs: "1.5rem", sm: "2rem", md: "2.2rem" }
                   }}
                 >
-                  Emergency Analytics Dashboard
+                  Real-time Monitoring Dashboard
                 </Typography>
               </Box>
               
               {/* Control Buttons */}
               <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+                <Tooltip title="Refresh Data">
+                  <IconButton 
+                    onClick={handleRefreshData}
+                    disabled={loading}
+                    sx={{ 
+                      color: "#66FF00",
+                      border: "2px solid #66FF00",
+                      fontSize: { xs: "1rem", md: "1.2rem" },
+                      "&:hover": {
+                        backgroundColor: "rgba(102, 255, 0, 0.1)",
+                      },
+                      "&:disabled": {
+                        opacity: 0.5,
+                      }
+                    }}
+                  >
+                    <Refresh />
+                  </IconButton>
+                </Tooltip>
+
                 <Tooltip title="Full Screen View">
                   <IconButton 
                     onClick={toggleFullScreen}
@@ -692,43 +1416,106 @@ const Home = () => {
                 </Tooltip>
               </Box>
             </Box>
-            
-            <Grid container spacing={isExpanded ? 4 : 3}>
-              {/* Fire Incidents Chart */}
-              <Grid item xs={12} md={6}>
-                <Paper 
+
+            {/* Connection Status */}
+            <Box sx={{ mb: 4, display: "flex", gap: 2, flexWrap: "wrap", alignItems: "center" }}>
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  color: wsConnection?.readyState === WebSocket.OPEN ? "#66FF00" : "#DC143C",
+                  fontWeight: 600,
+                  px: 2,
+                  py: 0.5,
+                  backgroundColor: "rgba(255,255,255,0.8)",
+                  borderRadius: 1,
+                }}
+              >
+                💧 Flood: {wsConnection?.readyState === WebSocket.OPEN ? "🟢 Connected" : "🔴 Disconnected"}
+              </Typography>
+              
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  color: landslideWsConnection?.readyState === WebSocket.OPEN ? "#66FF00" : "#DC143C",
+                  fontWeight: 600,
+                  px: 2,
+                  py: 0.5,
+                  backgroundColor: "rgba(255,255,255,0.8)",
+                  borderRadius: 1,
+                }}
+              >
+                🏔️ Landslide: {landslideWsConnection?.readyState === WebSocket.OPEN ? "🟢 Connected" : "🔴 Disconnected"}
+              </Typography>
+
+                            <Typography 
+                variant="body2" 
+                sx={{ 
+                  color: gasFireWsConnection?.readyState === WebSocket.OPEN ? "#66FF00" : "#DC143C",
+                  fontWeight: 600,
+                  px: 2,
+                  py: 0.5,
+                  backgroundColor: "rgba(255,255,255,0.8)",
+                  borderRadius: 1,
+                }}
+              >
+                🔥 Gas/Fire: {gasFireWsConnection?.readyState === WebSocket.OPEN ? "🟢 Connected" : "🔴 Disconnected"}
+              </Typography>
+              
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  color: "#34623f",
+                  fontWeight: 500,
+                  px: 2,
+                  py: 0.5,
+                  backgroundColor: "rgba(255,255,255,0.8)",
+                  borderRadius: 1,
+                }}
+              >
+                Data: Flood({floodData.length}) | Landslide({landslideData.length}) | Gas/Fire({gasFireData.length})
+              </Typography>
+
+              {loading && (
+                <Typography 
+                  variant="body2" 
                   sx={{ 
-                    p: 3, 
-                    height: isExpanded ? 400 : 320,
-                    backgroundColor: '#ffffff',
-                    border: '3px solid #cc4a02',
-                    borderRadius: 2,
-                    transition: "all 0.3s ease",
-                    '&:hover': {
-                      transform: 'translateY(-5px)',
-                      boxShadow: '0 8px 25px rgba(204, 74, 2, 0.2)',
-                    },
-                    '@media print': {
-                      breakInside: 'avoid',
-                      pageBreakInside: 'avoid'
-                    }
+                    color: "#cc4a02",
+                    fontWeight: 500,
+                    px: 2,
+                    py: 0.5,
+                    backgroundColor: "rgba(255,255,255,0.8)",
+                    borderRadius: 1,
                   }}
                 >
-                  <Typography variant="h6" sx={{ mb: 2, color: '#34623f', fontWeight: 600, fontSize: { xs: "1rem", md: "1.1rem" } }}>
-                    🔥 Fire Incidents Timeline (Last 7 Days)
-                  </Typography>
-                  <Box sx={{ height: isExpanded ? 300 : 220 }}>
-                    <Line data={fireIncidentsData} options={chartOptions} />
-                  </Box>
-                </Paper>
-              </Grid>
+                  Loading...
+                </Typography>
+              )}
 
-              {/* Flood Water Level Chart */}
-              <Grid item xs={12} md={6}>
+              {error && (
+                <Typography 
+                  variant="body2" 
+                  sx={{ 
+                    color: "#DC143C",
+                    fontWeight: 500,
+                    px: 2,
+                    py: 0.5,
+                    backgroundColor: "rgba(255,255,255,0.8)",
+                    borderRadius: 1,
+                  }}
+                >
+                  Error: {error}
+                </Typography>
+              )}
+            </Box>
+            
+            {/* Charts Grid */}
+            <Grid container spacing={isExpanded ? 4 : 3}>
+              {/* Flood Chart */}
+              <Grid item xs={12} lg={6}>
                 <Paper 
                   sx={{ 
                     p: 3, 
-                    height: isExpanded ? 400 : 320,
+                    height: isExpanded ? 500 : 400,
                     backgroundColor: '#ffffff',
                     border: '3px solid #1F51FF',
                     borderRadius: 2,
@@ -744,27 +1531,44 @@ const Home = () => {
                   }}
                 >
                   <Typography variant="h6" sx={{ mb: 2, color: '#34623f', fontWeight: 600, fontSize: { xs: "1rem", md: "1.1rem" } }}>
-                    💧 Water Level Monitoring (24 Hours)
+                    💧 Flood Monitoring ({floodData.length > 0 ? `${floodData.length} data points` : 'No data'})
                   </Typography>
-                  <Box sx={{ height: isExpanded ? 300 : 220 }}>
-                    <Line data={floodWaterLevelData} options={chartOptions} />
+                  
+                  <Box sx={{ height: isExpanded ? 400 : 300 }}>
+                    {floodData.length > 0 ? (
+                      <Line data={prepareFloodChartData()} options={floodChartOptions} />
+                    ) : (
+                      <Box 
+                        sx={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center', 
+                          height: '100%',
+                          color: '#34623f',
+                          fontSize: '1.2rem',
+                          fontWeight: 500
+                        }}
+                      >
+                        {loading ? 'Loading flood data...' : error ? `Error: ${error}` : 'No flood data available'}
+                      </Box>
+                    )}
                   </Box>
                 </Paper>
               </Grid>
 
-              {/* Landslide Alert Distribution */}
-              <Grid item xs={12} md={6}>
+              {/* Landslide Chart */}
+              <Grid item xs={12} lg={6}>
                 <Paper 
                   sx={{ 
                     p: 3, 
-                    height: isExpanded ? 400 : 320,
+                    height: isExpanded ? 500 : 400,
                     backgroundColor: '#ffffff',
-                    border: '3px solid #66FF00',
+                    border: '3px solid #DC143C',
                     borderRadius: 2,
                     transition: "all 0.3s ease",
                     '&:hover': {
                       transform: 'translateY(-5px)',
-                      boxShadow: '0 8px 25px rgba(102, 255, 0, 0.2)',
+                      boxShadow: '0 8px 25px rgba(220, 20, 60, 0.2)',
                     },
                     '@media print': {
                       breakInside: 'avoid',
@@ -773,27 +1577,43 @@ const Home = () => {
                   }}
                 >
                   <Typography variant="h6" sx={{ mb: 2, color: '#34623f', fontWeight: 600, fontSize: { xs: "1rem", md: "1.1rem" } }}>
-                    ⛰️ Landslide Alert Distribution
+                    🏔️ Landslide Monitoring ({landslideData.length > 0 ? `${landslideData.length} data points` : 'No data'})
                   </Typography>
-                  <Box sx={{ height: isExpanded ? 300 : 220 }}>
-                    <Doughnut data={landslideAlertData} options={pieOptions} />
+                  
+                  <Box sx={{ height: isExpanded ? 400 : 300 }}>
+                    {landslideData.length > 0 ? (
+                      <Line data={prepareLandslideChartData()} options={landslideChartOptions} />
+                    ) : (
+                      <Box 
+                        sx={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center', 
+                          height: '100%',
+                          color: '#34623f',
+                          fontSize: '1.2rem',
+                          fontWeight: 500
+                        }}
+                      >
+                        Loading landslide data...
+                      </Box>
+                    )}
                   </Box>
                 </Paper>
               </Grid>
-
-              {/* Overall System Status */}
-              <Grid item xs={12} md={6}>
+            {/* Gas/Fire Chart */}
+              <Grid item xs={12} lg={4}>
                 <Paper 
                   sx={{ 
                     p: 3, 
-                    height: isExpanded ? 400 : 320,
+                    height: isExpanded ? 500 : 400,
                     backgroundColor: '#ffffff',
-                    border: '3px solid #34623f',
+                    border: '3px solid #FF6384',
                     borderRadius: 2,
                     transition: "all 0.3s ease",
                     '&:hover': {
                       transform: 'translateY(-5px)',
-                      boxShadow: '0 8px 25px rgba(52, 98, 63, 0.2)',
+                      boxShadow: '0 8px 25px rgba(255, 99, 132, 0.2)',
                     },
                     '@media print': {
                       breakInside: 'avoid',
@@ -802,17 +1622,36 @@ const Home = () => {
                   }}
                 >
                   <Typography variant="h6" sx={{ mb: 2, color: '#34623f', fontWeight: 600, fontSize: { xs: "1rem", md: "1.1rem" } }}>
-                    📊 Overall Emergency Status
+                    🔥 Gas/Fire Monitoring ({gasFireData.length > 0 ? `${gasFireData.length} data points` : 'No data'})
                   </Typography>
-                  <Box sx={{ height: isExpanded ? 300 : 220 }}>
-                    <Pie data={overallStatusData} options={pieOptions} />
+                  
+                  <Box sx={{ height: isExpanded ? 400 : 300 }}>
+                    {gasFireData.length > 0 ? (
+                      <Line data={prepareGasFireChartData()} options={gasFireChartOptions} />
+                    ) : (
+                      <Box 
+                        sx={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center', 
+                          height: '100%',
+                          color: '#34623f',
+                          fontSize: '1.2rem',
+                          fontWeight: 500
+                        }}
+                      >
+                        Loading gas/fire data...
+                      </Box>
+                    )}
                   </Box>
                 </Paper>
               </Grid>
             </Grid>
           </Box>
 
-          {/* Balanced Notifications Section */}
+          
+
+          {/* Notifications Section */}
           <Box sx={{ width: "100%", maxWidth: 800, px: { xs: 1, md: 0 } }}>
             <Typography
               variant="h5"
@@ -916,7 +1755,7 @@ const Home = () => {
             mb: 4,
           }}>
             <Box sx={{ display: "flex", alignItems: "center" }}>
-              <BarChart sx={{ fontSize: 40, mr: 2, color: "#34623f" }} />
+              <BarChart sx={{ fontSize: 40, mr: 2, color: "#cc4a02" }} />
               <Typography
                 variant="h3"
                 sx={{ 
@@ -924,7 +1763,7 @@ const Home = () => {
                   fontWeight: 600,
                 }}
               >
-                RESCPI Emergency Analytics Dashboard
+                RESCPI Real-time Monitoring Dashboard
               </Typography>
             </Box>
             
@@ -943,84 +1782,109 @@ const Home = () => {
             </IconButton>
           </Box>
           
-          {/* Full Screen Charts Grid */}
-          <Grid container spacing={4}>
-            {/* Fire Incidents Chart */}
-            <Grid item xs={12} lg={6}>
+          {/* Full Screen Charts */}
+          <Grid container spacing={4} sx={{ height: 'calc(100vh - 200px)' }}>
+            <Grid item xs={12} md={6}>
               <Paper 
                 sx={{ 
                   p: 4, 
-                  height: 500,
-                  backgroundColor: '#ffffff',
-                  border: '3px solid #cc4a02',
-                  borderRadius: 2,
-                }}
-              >
-                <Typography variant="h5" sx={{ mb: 3, color: '#34623f', fontWeight: 600 }}>
-                  🔥 Fire Incidents Timeline (Last 7 Days)
-                </Typography>
-                <Box sx={{ height: 400 }}>
-                  <Line data={fireIncidentsData} options={chartOptions} />
-                </Box>
-              </Paper>
-            </Grid>
-
-            {/* Flood Water Level Chart */}
-            <Grid item xs={12} lg={6}>
-              <Paper 
-                sx={{ 
-                  p: 4, 
-                  height: 500,
+                  height: '100%',
                   backgroundColor: '#ffffff',
                   border: '3px solid #1F51FF',
                   borderRadius: 2,
                 }}
               >
                 <Typography variant="h5" sx={{ mb: 3, color: '#34623f', fontWeight: 600 }}>
-                  💧 Water Level Monitoring (24 Hours)
+                  💧 Flood Monitoring - Full Screen
                 </Typography>
-                <Box sx={{ height: 400 }}>
-                  <Line data={floodWaterLevelData} options={chartOptions} />
+                <Box sx={{ height: 'calc(100% - 80px)' }}>
+                  {floodData.length > 0 ? (
+                    <Line data={prepareFloodChartData()} options={floodChartOptions} />
+                  ) : (
+                    <Box 
+                      sx={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center', 
+                        height: '100%',
+                        color: '#34623f',
+                        fontSize: '2rem',
+                        fontWeight: 500
+                      }}
+                    >
+                      No flood data available
+                    </Box>
+                  )}
                 </Box>
               </Paper>
             </Grid>
-
-            {/* Landslide Alert Distribution */}
-            <Grid item xs={12} lg={6}>
+            
+            <Grid item xs={12} md={6}>
               <Paper 
                 sx={{ 
                   p: 4, 
-                  height: 500,
+                  height: '100%',
                   backgroundColor: '#ffffff',
-                  border: '3px solid #66FF00',
+                  border: '3px solid #DC143C',
                   borderRadius: 2,
                 }}
               >
                 <Typography variant="h5" sx={{ mb: 3, color: '#34623f', fontWeight: 600 }}>
-                  ⛰️ Landslide Alert Distribution
+                  🏔️ Landslide Monitoring - Full Screen
                 </Typography>
-                <Box sx={{ height: 400 }}>
-                  <Doughnut data={landslideAlertData} options={pieOptions} />
+                <Box sx={{ height: 'calc(100% - 80px)' }}>
+                  {landslideData.length > 0 ? (
+                    <Line data={prepareLandslideChartData()} options={landslideChartOptions} />
+                  ) : (
+                    <Box 
+                      sx={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center', 
+                        height: '100%',
+                        color: '#34623f',
+                        fontSize: '2rem',
+                        fontWeight: 500
+                      }}
+                    >
+                      No landslide data available
+                    </Box>
+                  )}
                 </Box>
               </Paper>
             </Grid>
 
-            {/* Overall System Status */}
-            <Grid item xs={12} lg={6}>
+          <Grid item xs={12} md={4}>
               <Paper 
                 sx={{ 
                   p: 4, 
-                  height: 500,
+                  height: '100%',
                   backgroundColor: '#ffffff',
-                  border: '3px solid #34623f',
+                  border: '3px solid #FF6384',
                   borderRadius: 2,
                 }}
               >
                 <Typography variant="h5" sx={{ mb: 3, color: '#34623f', fontWeight: 600 }}>
-                  📊 Overall Emergency Status
+                  🔥 Gas/Fire Monitoring - Full Screen
                 </Typography>
-                <Box sx={{ height: 400 }}>
-                  <Pie data={overallStatusData} options={pieOptions} />
+                <Box sx={{ height: 'calc(100% - 80px)' }}>
+                  {gasFireData.length > 0 ? (
+                    <Line data={prepareGasFireChartData()} options={gasFireChartOptions} />
+                  ) : (
+                    <Box 
+                      sx={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center', 
+                        height: '100%',
+                        color: '#34623f',
+                        fontSize: '2rem',
+                        fontWeight: 500
+                      }}
+                    >
+                      No gas/fire data available
+                    </Box>
+                  )}
                 </Box>
               </Paper>
             </Grid>
