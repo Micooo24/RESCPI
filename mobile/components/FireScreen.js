@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -18,7 +18,6 @@ import baseURL from '../assets/common/baseURL';
 
 const { width } = Dimensions.get('window');
 
-
 const FireScreen = ({ navigation }) => {
   const [fireData, setFireData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -26,16 +25,129 @@ const FireScreen = ({ navigation }) => {
   const [rescueActive, setRescueActive] = useState(false);
   const [rescueLoading, setRescueLoading] = useState(false);
   const [latestData, setLatestData] = useState(null);
-  const [latestLoading, setLatestLoading] = useState(false);
+  const [wsConnected, setWsConnected] = useState(false);
+  const [autoFireRescueTriggered, setAutoFireRescueTriggered] = useState(false);
+  const [fireDetected, setFireDetected] = useState(false);
+  const [vehicleStatus, setVehicleStatus] = useState('OFF');
+  
+  const wsRef = useRef(null);
+  const hasTriggeredFireRescue = useRef(false);
+  const reconnectAttempts = useRef(0);
+  const maxReconnectAttempts = 5;
 
-  // Fetch all fire data
+  // WebSocket URL
+  const WS_URL = 'ws://10.16.180.193:5000/gasfire/ws/frontend';
+
+  // Auto fire rescue function
+  const triggerAutoFireRescue = async (reason) => {
+    if (hasTriggeredFireRescue.current) return;
+    hasTriggeredFireRescue.current = true;
+    setAutoFireRescueTriggered(true);
+    
+    try {
+      const response = await axios.post(`${baseURL}/rescue/vehicle/on`);
+      if (response.data.status === 'success') {
+        setRescueActive(true);
+        setVehicleStatus('ON');
+        Alert.alert('🚨 AUTO RESCUE ACTIVATED', `Fire detected! Rescue vehicle deployed automatically.\nReason: ${reason}`);
+      }
+    } catch (error) {
+      console.error('Auto rescue failed:', error);
+      Alert.alert('Error', 'Auto rescue activation failed');
+    }
+  };
+
+  // Emergency stop rescue
+  const emergencyStopRescue = async () => {
+    try {
+      const response = await axios.post(`${baseURL}/rescue/vehicle/off`);
+      if (response.data.status === 'success') {
+        setRescueActive(false);
+        setVehicleStatus('OFF');
+        setAutoFireRescueTriggered(false);
+        hasTriggeredFireRescue.current = false;
+        Alert.alert('Success', '🛑 Emergency stop activated. Rescue vehicle deactivated.');
+      }
+    } catch (error) {
+      console.error('Emergency stop failed:', error);
+      Alert.alert('Error', 'Emergency stop failed');
+    }
+  };
+
+  // Fire detection logic
+  const detectFire = (flameDetected, data) => {
+    const currentFireDetected = flameDetected || (data.mq2_ppm > 300 && data.mq7_ppm > 150);
+    
+    if (currentFireDetected && !fireDetected) {
+      setFireDetected(true);
+      if (flameDetected) {
+        triggerAutoFireRescue('Flame sensor activated');
+      } else {
+        triggerAutoFireRescue(`Critical gas levels: MQ2=${data.mq2_ppm}ppm, MQ7=${data.mq7_ppm}ppm`);
+      }
+    } else if (!currentFireDetected && fireDetected) {
+      setFireDetected(false);
+    }
+  };
+
+  // WebSocket connection
+  const connectWebSocket = () => {
+    try {
+      wsRef.current = new WebSocket(WS_URL);
+      
+      wsRef.current.onopen = () => {
+        setWsConnected(true);
+        reconnectAttempts.current = 0;
+        console.log('WebSocket connected');
+      };
+      
+      wsRef.current.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          
+          if (data.type === 'ping') {
+            wsRef.current.send(JSON.stringify({ type: 'pong' }));
+            return;
+          }
+          
+          if (data.type === 'sensor' || data.mq2_ppm !== undefined) {
+            setLatestData(data);
+            setFireData(prev => [data, ...prev.slice(0, 49)]);
+            detectFire(data.flame, data);
+          }
+        } catch (error) {
+          console.error('WebSocket message error:', error);
+        }
+      };
+      
+      wsRef.current.onclose = () => {
+        setWsConnected(false);
+        if (reconnectAttempts.current < maxReconnectAttempts) {
+          setTimeout(() => {
+            reconnectAttempts.current++;
+            connectWebSocket();
+          }, 3000);
+        }
+      };
+      
+      wsRef.current.onerror = (error) => {
+        console.error('WebSocket error:', error);
+        setWsConnected(false);
+      };
+    } catch (error) {
+      console.error('WebSocket connection error:', error);
+    }
+  };
+
+  // Fetch data via REST API
   const fetchAllData = async () => {
     try {
       const response = await axios.get(`${baseURL}/gasfire/all`);
       if (response.data.status === 'success') {
         setFireData(response.data.data);
-      } else {
-        console.error('Failed to fetch fire data');
+        if (response.data.data.length > 0) {
+          setLatestData(response.data.data[0]);
+        }
       }
     } catch (error) {
       console.error('Error fetching fire data:', error);
@@ -48,6 +160,13 @@ const FireScreen = ({ navigation }) => {
 
   useEffect(() => {
     fetchAllData();
+    connectWebSocket();
+    
+    return () => {
+      if (wsRef.current) {
+        wsRef.current.close();
+      }
+    };
   }, []);
 
   const onRefresh = () => {
@@ -55,90 +174,53 @@ const FireScreen = ({ navigation }) => {
     fetchAllData();
   };
 
+  // Manual rescue control
   const handleRescueClick = async () => {
     setRescueLoading(true);
     try {
-      if (!rescueActive) {
-        const response = await axios.post(`${baseURL}/rescue/vehicle/on`);
-        if (response.data.status === 'success') {
-          Alert.alert('Success', '🚨 Rescue Vehicle Activated!');
-          setRescueActive(true);
-        } else {
-          Alert.alert('Error', `❌ Activation Failed: ${response.data.message}`);
-        }
-      } else {
-        const response = await axios.post(`${baseURL}/rescue/vehicle/off`);
-        if (response.data.status === 'success') {
-          Alert.alert('Success', '🛑 Rescue Vehicle Deactivated.');
-          setRescueActive(false);
-        } else {
-          Alert.alert('Error', `❌ Deactivation Failed: ${response.data.message}`);
-        }
+      const endpoint = rescueActive ? '/rescue/vehicle/off' : '/rescue/vehicle/on';
+      const response = await axios.post(`${baseURL}${endpoint}`);
+      
+      if (response.data.status === 'success') {
+        setRescueActive(!rescueActive);
+        setVehicleStatus(rescueActive ? 'OFF' : 'ON');
+        Alert.alert('Success', rescueActive ? '🛑 Rescue Vehicle Deactivated' : '🚨 Rescue Vehicle Activated');
       }
     } catch (error) {
-      console.error('Error controlling Rescue Vehicle:', error);
-      Alert.alert('Error', '❌ Could not contact backend.');
+      console.error('Error controlling rescue vehicle:', error);
+      Alert.alert('Error', 'Could not control rescue vehicle');
     } finally {
       setRescueLoading(false);
     }
   };
 
-  const saveAndFetchLatest = async () => {
-    setLatestLoading(true);
-    try {
-      const dummyPayload = {
-        mq2_ppm: Math.random() * 500,
-        mq7_ppm: Math.random() * 300,
-        flame: Math.random() < 0.3,
-      };
+  // Get gas level severity
+  const getGasLevelSeverity = (mq2, mq7) => {
+    if (mq2 > 300 || mq7 > 150) return 'CRITICAL';
+    if (mq2 > 200 || mq7 > 100) return 'HIGH';
+    if (mq2 > 100 || mq7 > 50) return 'MODERATE';
+    return 'NORMAL';
+  };
 
-      const response = await axios.post(`${baseURL}/gasfire/data-latest`, dummyPayload);
-
-      if (response.data.status === 'success') {
-        setLatestData(response.data.latest);
-        Alert.alert('Success', '✅ Data saved and latest reading fetched!');
-      } else {
-        Alert.alert('Error', `❌ Failed: ${response.data.message}`);
-      }
-    } catch (error) {
-      console.error('Error saving & fetching latest:', error);
-      Alert.alert('Error', '❌ Could not contact backend.');
-    } finally {
-      setLatestLoading(false);
+  const getSeverityColor = (severity) => {
+    switch (severity) {
+      case 'CRITICAL': return '#d32f2f';
+      case 'HIGH': return '#ff9800';
+      case 'MODERATE': return '#ffc107';
+      default: return '#4caf50';
     }
   };
 
-  const showRescueButton = fireData.some(item => item.flame === true);
-  const showGasWarning =
-    !latestData?.flame &&
-    ((latestData?.mq2_ppm ?? 0) > 200 || (latestData?.mq7_ppm ?? 0) > 100);
+  const showRescueButton = latestData && (latestData.flame || 
+    (latestData.mq2_ppm > 200 && latestData.mq7_ppm > 100));
 
   const StatCard = ({ title, value, colors, icon }) => (
     <View style={styles.statCardContainer}>
       <LinearGradient colors={colors} style={styles.statCard}>
-        <Ionicons name={icon} size={30} color="white" style={styles.statIcon} />
+        <Ionicons name={icon} size={24} color="white" style={styles.statIcon} />
         <Text style={styles.statTitle}>{title}</Text>
         <Text style={styles.statValue}>{value}</Text>
       </LinearGradient>
-    </View>
-  );
-
-  const LogItem = ({ item }) => (
-    <View style={styles.logItem}>
-      <View style={styles.logHeader}>
-        <Text style={styles.logTime}>
-          {new Date(item.timestamp).toLocaleDateString()} {new Date(item.timestamp).toLocaleTimeString()}
-        </Text>
-        <View style={[styles.flameBadge, { backgroundColor: item.flame ? '#f44336' : '#4caf50' }]}>
-          <Text style={styles.flameBadgeText}>
-            {item.flame ? '🔥 Fire' : '✅ Safe'}
-          </Text>
-        </View>
-      </View>
-      <View style={styles.logData}>
-        <Text style={styles.logText}>MQ2: {item.mq2_ppm.toFixed(2)} PPM</Text>
-        <Text style={styles.logText}>MQ7: {item.mq7_ppm.toFixed(2)} PPM</Text>
-      </View>
     </View>
   );
 
@@ -146,7 +228,7 @@ const FireScreen = ({ navigation }) => {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#d32f2f" />
+          <ActivityIndicator size="large" color="#FF7A30" />
           <Text style={styles.loadingText}>Loading Fire Data...</Text>
         </View>
       </SafeAreaView>
@@ -157,49 +239,82 @@ const FireScreen = ({ navigation }) => {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Ionicons name="arrow-back" size={24} color="#d32f2f" />
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+          <Ionicons name="arrow-back" size={24} color="#FF7A30" />
         </TouchableOpacity>
         <View style={styles.headerContent}>
-          <Ionicons name="flame" size={32} color="#d32f2f" />
+          <Ionicons name="flame" size={28} color="#FF7A30" />
           <Text style={styles.headerTitle}>Fire Dashboard</Text>
         </View>
+        <View style={[styles.connectionDot, { backgroundColor: wsConnected ? '#4caf50' : '#f44336' }]} />
       </View>
 
       <ScrollView
         style={styles.scrollView}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        {/* Statistics Cards */}
-        <View style={styles.statsContainer}>
-          <StatCard
-            title="Active Incidents"
-            value={fireData.filter(item => item.flame).length}
-            colors={['#f44336', '#d32f2f']}
-            icon="flame"
-          />
-          <StatCard
-            title="MQ2 Alerts"
-            value={fireData.filter(item => item.mq2_ppm > 200).length}
-            colors={['#ff9800', '#f57c00']}
-            icon="warning"
-          />
-          <StatCard
-            title="MQ7 Alerts"
-            value={fireData.filter(item => item.mq7_ppm > 100).length}
-            colors={['#4caf50', '#388e3c']}
-            icon="checkmark-circle"
-          />
+        {/* Connection Status */}
+        <View style={styles.statusBar}>
+          <Text style={styles.statusText}>
+            🔗 {wsConnected ? 'Connected' : 'Disconnected'} | 🚗 Vehicle: {vehicleStatus}
+          </Text>
         </View>
 
-        {/* Alert Status */}
-        <View style={styles.alertContainer}>
-          {showRescueButton ? (
+        {/* Latest Data Card */}
+        {latestData && (
+          <View style={styles.latestDataCard}>
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardTitle}>Current Status</Text>
+              <View style={[styles.severityBadge, { 
+                backgroundColor: getSeverityColor(getGasLevelSeverity(latestData.mq2_ppm, latestData.mq7_ppm)) 
+              }]}>
+                <Text style={styles.severityText}>
+                  {getGasLevelSeverity(latestData.mq2_ppm, latestData.mq7_ppm)}
+                </Text>
+              </View>
+            </View>
+            
+            <View style={styles.dataGrid}>
+              <View style={styles.dataItem}>
+                <Text style={styles.dataLabel}>MQ2 Gas</Text>
+                <Text style={styles.dataValue}>{latestData.mq2_ppm?.toFixed(1)} ppm</Text>
+              </View>
+              <View style={styles.dataItem}>
+                <Text style={styles.dataLabel}>MQ7 CO</Text>
+                <Text style={styles.dataValue}>{latestData.mq7_ppm?.toFixed(1)} ppm</Text>
+              </View>
+              <View style={styles.dataItem}>
+                <Text style={styles.dataLabel}>Flame</Text>
+                <Text style={[styles.dataValue, { color: latestData.flame ? '#f44336' : '#4caf50' }]}>
+                  {latestData.flame ? '🔥 FIRE' : '✅ SAFE'}
+                </Text>
+              </View>
+              <View style={styles.dataItem}>
+                <Text style={styles.dataLabel}>Status</Text>
+                <Text style={styles.dataValue}>{latestData.status || 'normal'}</Text>
+              </View>
+            </View>
+          </View>
+        )}
+
+        {/* Fire Alert & Controls */}
+        {fireDetected && (
+          <View style={styles.fireAlert}>
+            <Ionicons name="warning" size={32} color="#fff" />
+            <View style={styles.alertContent}>
+              <Text style={styles.alertTitle}>🚨 FIRE DETECTED!</Text>
+              <Text style={styles.alertText}>Emergency protocols activated</Text>
+            </View>
+          </View>
+        )}
+
+        {/* Control Buttons */}
+        <View style={styles.controlsContainer}>
+          {showRescueButton && (
             <TouchableOpacity
-              style={[styles.rescueButton, { backgroundColor: rescueActive ? '#f44336' : '#d32f2f' }]}
+              style={[styles.rescueButton, { 
+                backgroundColor: rescueActive ? '#f44336' : '#FF7A30' 
+              }]}
               onPress={handleRescueClick}
               disabled={rescueLoading}
             >
@@ -207,77 +322,70 @@ const FireScreen = ({ navigation }) => {
                 <ActivityIndicator color="white" />
               ) : (
                 <>
-                  <Ionicons name="warning" size={24} color="white" />
-                  <Text style={styles.rescueButtonText}>
-                    {rescueActive ? 'Deactivate Rescue Vehicle' : 'Activate Rescue Vehicle'}
+                  <Ionicons name={rescueActive ? "stop" : "rocket"} size={20} color="white" />
+                  <Text style={styles.buttonText}>
+                    {rescueActive ? 'Stop Rescue' : 'Deploy Rescue'}
                   </Text>
                 </>
               )}
             </TouchableOpacity>
-          ) : showGasWarning ? (
-            <View style={styles.warningAlert}>
-              <Ionicons name="warning" size={24} color="#ff9800" />
-              <Text style={styles.warningText}>
-                ⚠️ High gas levels detected (MQ2/MQ7). Monitor environment closely!
-              </Text>
-            </View>
-          ) : (
-            <View style={styles.successAlert}>
-              <Ionicons name="checkmark-circle" size={24} color="#4caf50" />
-              <Text style={styles.successText}>
-                ✅ No fire or dangerous gas detected.
-              </Text>
-            </View>
+          )}
+
+          {autoFireRescueTriggered && (
+            <TouchableOpacity
+              style={[styles.rescueButton, { backgroundColor: '#d32f2f' }]}
+              onPress={emergencyStopRescue}
+            >
+              <Ionicons name="hand-left" size={20} color="white" />
+              <Text style={styles.buttonText}>Emergency Stop</Text>
+            </TouchableOpacity>
           )}
         </View>
 
-        {/* Fetch Latest Button */}
-        <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={styles.fetchButton}
-            onPress={saveAndFetchLatest}
-            disabled={latestLoading}
-          >
-            {latestLoading ? (
-              <ActivityIndicator color="#d32f2f" />
-            ) : (
-              <Text style={styles.fetchButtonText}>Save & Fetch Latest Reading</Text>
-            )}
-          </TouchableOpacity>
+        {/* Statistics */}
+        <View style={styles.statsContainer}>
+          <StatCard
+            title="Fire Incidents"
+            value={fireData.filter(item => item.flame).length}
+            colors={['#f44336', '#d32f2f']}
+            icon="flame"
+          />
+          <StatCard
+            title="Gas Alerts"
+            value={fireData.filter(item => item.mq2_ppm > 200).length}
+            colors={['#ff9800', '#f57c00']}
+            icon="warning"
+          />
+          <StatCard
+            title="Total Readings"
+            value={fireData.length}
+            colors={['#4caf50', '#388e3c']}
+            icon="analytics"
+          />
         </View>
 
-        {/* Latest Data Card */}
-        {latestData && (
-          <View style={styles.latestDataCard}>
-            <Text style={styles.latestDataTitle}>Latest Reading</Text>
-            <Text style={styles.latestDataText}>
-              <Text style={styles.bold}>Time:</Text> {new Date(latestData.timestamp).toLocaleString()}
-            </Text>
-            <Text style={styles.latestDataText}>
-              <Text style={styles.bold}>MQ2:</Text> {latestData.mq2_ppm.toFixed(2)} PPM
-            </Text>
-            <Text style={styles.latestDataText}>
-              <Text style={styles.bold}>MQ7:</Text> {latestData.mq7_ppm.toFixed(2)} PPM
-            </Text>
-            <Text style={styles.latestDataText}>
-              <Text style={styles.bold}>Flame:</Text> {latestData.flame ? "🔥 Detected" : "✅ No Fire"}
-            </Text>
-          </View>
-        )}
-
-        {/* Fire Data Logs */}
+        {/* Recent Logs (Minimal) */}
         <View style={styles.logsContainer}>
-          <View style={styles.logsHeader}>
-            <Ionicons name="list" size={24} color="#d32f2f" />
-            <Text style={styles.logsTitle}>Gas & Fire Logs</Text>
-          </View>
-          {fireData.length > 0 ? (
-            fireData.slice(0, 10).map((item, index) => (
-              <LogItem key={item._id || index} item={item} />
-            ))
-          ) : (
-            <Text style={styles.noDataText}>No fire data available</Text>
-          )}
+          <Text style={styles.logsTitle}>Recent Activity</Text>
+          {fireData.slice(0, 5).map((item, index) => (
+            <View key={item._id || index} style={styles.logItem}>
+              <Text style={styles.logTime}>
+                {new Date(item.timestamp).toLocaleTimeString()}
+              </Text>
+              <View style={styles.logData}>
+                <Text style={styles.logText}>
+                  MQ2: {item.mq2_ppm?.toFixed(1)} | MQ7: {item.mq7_ppm?.toFixed(1)}
+                </Text>
+                <View style={[styles.flameBadge, { 
+                  backgroundColor: item.flame ? '#f44336' : '#4caf50' 
+                }]}>
+                  <Text style={styles.flameBadgeText}>
+                    {item.flame ? '🔥' : '✅'}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          ))}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -287,7 +395,7 @@ const FireScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#E9E3DF',
   },
   loadingContainer: {
     flex: 1,
@@ -297,72 +405,121 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 10,
     fontSize: 16,
-    color: '#666',
+    color: '#465C88',
+    fontFamily: 'Poppins',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: 'white',
+    backgroundColor: '#fff',
     elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    justifyContent: 'space-between',
   },
   backButton: {
     padding: 8,
-    marginRight: 12,
   },
   headerContent: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#333',
+    flex: 1,
     marginLeft: 12,
   },
-  scrollView: {
-    flex: 1,
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#000',
+    marginLeft: 8,
+    fontFamily: 'Poppins',
   },
-  statsContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    justifyContent: 'space-between',
+  connectionDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
   },
-  statCardContainer: {
-    flex: 1,
-    marginHorizontal: 4,
-  },
-  statCard: {
-    padding: 16,
-    borderRadius: 12,
+  statusBar: {
+    backgroundColor: '#465C88',
+    padding: 8,
     alignItems: 'center',
-    minHeight: 100,
-    justifyContent: 'center',
   },
-  statIcon: {
-    marginBottom: 8,
-  },
-  statTitle: {
-    color: 'white',
+  statusText: {
+    color: '#fff',
     fontSize: 12,
     fontWeight: '600',
-    textAlign: 'center',
-    marginBottom: 4,
   },
-  statValue: {
-    color: 'white',
-    fontSize: 24,
+  latestDataCard: {
+    margin: 16,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 16,
+    elevation: 4,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#000',
+  },
+  severityBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  severityText: {
+    color: '#fff',
+    fontSize: 12,
     fontWeight: 'bold',
   },
-  alertContainer: {
+  dataGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  dataItem: {
+    width: '48%',
+    marginBottom: 12,
+  },
+  dataLabel: {
+    fontSize: 12,
+    color: '#465C88',
+    marginBottom: 4,
+  },
+  dataValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#000',
+  },
+  fireAlert: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f44336',
+    margin: 16,
+    padding: 16,
+    borderRadius: 12,
+    elevation: 4,
+  },
+  alertContent: {
+    marginLeft: 12,
+    flex: 1,
+  },
+  alertTitle: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  alertText: {
+    color: '#fff',
+    fontSize: 14,
+  },
+  controlsContainer: {
     paddingHorizontal: 16,
-    marginBottom: 16,
+    gap: 12,
   },
   rescueButton: {
     flexDirection: 'row',
@@ -370,101 +527,57 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 16,
     borderRadius: 12,
-    elevation: 2,
+    elevation: 3,
   },
-  rescueButtonText: {
-    color: 'white',
+  buttonText: {
+    color: '#fff',
     fontSize: 16,
     fontWeight: 'bold',
     marginLeft: 8,
   },
-  warningAlert: {
+  statsContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff3e0',
-    padding: 16,
-    borderRadius: 12,
-    borderLeftWidth: 4,
-    borderLeftColor: '#ff9800',
-  },
-  warningText: {
-    flex: 1,
-    marginLeft: 12,
-    color: '#e65100',
-    fontSize: 14,
-  },
-  successAlert: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#e8f5e8',
-    padding: 16,
-    borderRadius: 12,
-    borderLeftWidth: 4,
-    borderLeftColor: '#4caf50',
-  },
-  successText: {
-    flex: 1,
-    marginLeft: 12,
-    color: '#2e7d32',
-    fontSize: 14,
-  },
-  buttonContainer: {
     paddingHorizontal: 16,
-    marginBottom: 16,
+    paddingVertical: 16,
+    gap: 8,
   },
-  fetchButton: {
-    backgroundColor: 'white',
-    padding: 16,
+  statCardContainer: {
+    flex: 1,
+  },
+  statCard: {
+    padding: 12,
     borderRadius: 12,
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#d32f2f',
+    minHeight: 80,
+    justifyContent: 'center',
   },
-  fetchButtonText: {
-    color: '#d32f2f',
-    fontSize: 16,
+  statIcon: {
+    marginBottom: 4,
+  },
+  statTitle: {
+    color: '#fff',
+    fontSize: 10,
     fontWeight: '600',
-  },
-  latestDataCard: {
-    margin: 16,
-    padding: 16,
-    backgroundColor: 'white',
-    borderRadius: 12,
-    elevation: 2,
-  },
-  latestDataTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 12,
     textAlign: 'center',
+    marginBottom: 4,
   },
-  latestDataText: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 8,
-  },
-  bold: {
+  statValue: {
+    color: '#fff',
+    fontSize: 20,
     fontWeight: 'bold',
-    color: '#333',
   },
   logsContainer: {
     margin: 16,
-    backgroundColor: 'white',
-    borderRadius: 12,
+    backgroundColor: '#fff',
+    borderRadius: 16,
     padding: 16,
     elevation: 2,
   },
-  logsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
   logsTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
-    color: '#333',
-    marginLeft: 8,
+    color: '#000',
+    marginBottom: 12,
   },
   logItem: {
     backgroundColor: '#f9f9f9',
@@ -472,40 +585,30 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 8,
   },
-  logHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
   logTime: {
     fontSize: 12,
-    color: '#666',
-    flex: 1,
-  },
-  flameBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  flameBadgeText: {
-    color: 'white',
-    fontSize: 10,
-    fontWeight: 'bold',
+    color: '#465C88',
+    marginBottom: 4,
   },
   logData: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
   },
   logText: {
     fontSize: 12,
-    color: '#333',
+    color: '#000',
+    flex: 1,
   },
-  noDataText: {
-    textAlign: 'center',
-    color: '#666',
-    fontSize: 14,
-    padding: 20,
+  flameBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 8,
+  },
+  flameBadgeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
 });
 
