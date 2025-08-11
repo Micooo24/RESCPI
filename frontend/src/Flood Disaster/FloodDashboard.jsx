@@ -14,6 +14,8 @@ import {
   Chip,
   Grid,
   Paper,
+  ThemeProvider,
+  createTheme,
 } from '@mui/material';
 import { 
   Water, 
@@ -31,6 +33,137 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
 const WS_URL = 'ws://10.16.180.193:5000/flood/ws/frontend';
+
+// RESCPI Modern Theme with Poppins font
+const rescpiTheme = createTheme({
+  typography: {
+    fontFamily: [
+      'Poppins',
+      '-apple-system',
+      'BlinkMacSystemFont',
+      '"Segoe UI"',
+      'Roboto',
+      '"Helvetica Neue"',
+      'Arial',
+      'sans-serif',
+    ].join(','),
+    h1: {
+      fontWeight: 700,
+      letterSpacing: '-0.025em',
+    },
+    h2: {
+      fontWeight: 600,
+      letterSpacing: '-0.02em',
+    },
+    h3: {
+      fontWeight: 600,
+      letterSpacing: '-0.015em',
+    },
+    h4: {
+      fontWeight: 600,
+      letterSpacing: '-0.01em',
+    },
+    h5: {
+      fontWeight: 600,
+    },
+    h6: {
+      fontWeight: 600,
+    },
+    body1: {
+      fontWeight: 400,
+      lineHeight: 1.6,
+    },
+    body2: {
+      fontWeight: 400,
+      lineHeight: 1.5,
+    },
+    button: {
+      fontWeight: 600,
+      letterSpacing: '0.02em',
+      textTransform: 'none',
+    },
+  },
+  palette: {
+    background: {
+      default: "#E9E3DF",
+      paper: "#FFFFFF",
+    },
+    text: {
+      primary: "#000000",
+      secondary: "#465C88",
+    },
+    primary: {
+      main: "#FF7A30",
+      contrastText: "#FFFFFF",
+    },
+    secondary: {
+      main: "#465C88",
+      contrastText: "#FFFFFF",
+    },
+    error: {
+      main: "#DC143C",
+    },
+    warning: {
+      main: "#FF7A30",
+    },
+    success: {
+      main: "#465C88",
+    },
+  },
+  shape: {
+    borderRadius: 16,
+  },
+  shadows: [
+    'none',
+    '0 2px 8px rgba(0, 0, 0, 0.05)',
+    '0 4px 16px rgba(0, 0, 0, 0.08)',
+    '0 8px 24px rgba(0, 0, 0, 0.12)',
+    '0 12px 32px rgba(0, 0, 0, 0.15)',
+    '0 16px 40px rgba(0, 0, 0, 0.18)',
+    '0 20px 48px rgba(0, 0, 0, 0.2)',
+    ...Array(18).fill('0 24px 56px rgba(0, 0, 0, 0.25)'),
+  ],
+  components: {
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          borderRadius: 12,
+          textTransform: 'none',
+          fontSize: '1rem',
+          fontWeight: 600,
+          padding: '12px 32px',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          '&:hover': {
+            transform: 'translateY(-2px)',
+            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
+          },
+        },
+      },
+    },
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          borderRadius: 20,
+          border: 'none',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          '&:hover': {
+            transform: 'translateY(-4px)',
+            boxShadow: '0 12px 32px rgba(0, 0, 0, 0.15)',
+          },
+        },
+      },
+    },
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          borderRadius: 20,
+          border: 'none',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        },
+      },
+    },
+  },
+});
 
 // 🚨 FLOOD DETECTION THRESHOLDS (UPDATED FOR IMMEDIATE RESCUE)
 const FLOOD_DETECTION = {
@@ -438,253 +571,596 @@ const FloodDashboard = () => {
   const showRescueButton = floodData && getAlertStatus(floodData.liters) === 'critical' && !autoRescueCompleted;
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4 }}>
-      {/* Header with Navigation and Connection Status */}
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={3}>
-        <Box display="flex" alignItems="center">
-          <Button
-            startIcon={<ArrowBack />}
-            onClick={() => navigate('/')}
-            sx={{ 
-              color: '#0077b6', 
-              mr: 2,
-              '&:hover': {
-                backgroundColor: 'rgba(0, 119, 182, 0.1)',
-              }
+    <ThemeProvider theme={rescpiTheme}>
+      {/* Import Poppins Font */}
+      <link
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet"
+      />
+      
+      <Box
+        sx={{
+          minHeight: "100vh",
+          background: "linear-gradient(135deg, #E9E3DF 0%, #F5F0EC 100%)",
+          py: 4,
+          position: "relative",
+        }}
+      >
+        {/* Background Pattern */}
+        <Box
+          sx={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            opacity: 0.03,
+            backgroundImage: `
+              radial-gradient(circle at 25% 25%, #FF7A30 0%, transparent 50%),
+              radial-gradient(circle at 75% 75%, #465C88 0%, transparent 50%)
+            `,
+            zIndex: 0,
+          }}
+        />
+        
+        <Container maxWidth="lg" sx={{ position: "relative", zIndex: 1 }}>
+          {/* Header with Navigation and Connection Status */}
+          <Box 
+            display="flex" 
+            justifyContent="space-between" 
+            alignItems="center" 
+            mb={4}
+            sx={{
+              background: "linear-gradient(135deg, #FFFFFF 0%, #F8F8F8 100%)",
+              p: 3,
+              borderRadius: 4,
+              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)",
             }}
           >
-            Back to Home
-          </Button>
-          <Typography variant="h4" sx={{ color: '#0077b6', fontWeight: 600 }}>
-            Flood Emergency Dashboard
-          </Typography>
-        </Box>
-        <Box display="flex" alignItems="center" gap={1}>
-          {wsConnected ? (
-            <Wifi sx={{ color: 'green' }} />
-          ) : (
-            <WifiOff sx={{ color: 'red' }} />
-          )}
-          <Typography variant="body2" color={wsConnected ? 'success.main' : 'error.main'}>
-            {connectionStatus}
-          </Typography>
-        </Box>
-      </Box>
-
-      {/* 🚨 AUTO-RESCUE TRIGGERED NOTIFICATION (IMMEDIATE) */}
-      {autoRescueTriggered && (
-        <Alert 
-          severity="error" 
-          sx={{ 
-            mb: 2,
-            backgroundColor: 'rgba(220, 20, 60, 0.9)',
-            color: 'white',
-            fontSize: '1.2rem',
-            fontWeight: 'bold',
-            animation: 'pulse 1s infinite'
-          }}
-          icon={<Emergency sx={{ color: 'white' }} />}
-        >
-          🚨 CRITICAL FLOOD DETECTED! RESCUE VEHICLE ACTIVATED IMMEDIATELY! (ONE-TIME ACTIVATION)
-        </Alert>
-      )}
-
-      {/* 🚨 AUTO-RESCUE COMPLETED NOTIFICATION */}
-      {autoRescueCompleted && !autoRescueTriggered && (
-        <Alert 
-          severity="info" 
-          sx={{ 
-            mb: 2,
-            backgroundColor: 'rgba(0, 119, 182, 0.9)',
-            color: 'white',
-            fontSize: '1.0rem',
-            fontWeight: 'bold'
-          }}
-          action={
-            <Button 
-              color="inherit" 
-              size="small" 
-              onClick={resetAutoRescueSystem}
-              sx={{ color: 'white', borderColor: 'white' }}
-            >
-              RESET SYSTEM
-            </Button>
-          }
-        >
-          ✅ FLOOD AUTO-RESCUE COMPLETED - Vehicle activated IMMEDIATELY, remains active during critical conditions
-        </Alert>
-      )}
-
-      {/* 🚨 CRITICAL FLOOD PERSISTENT ALERT */}
-      {criticalFloodDetected && autoRescueCompleted && !autoRescueTriggered && (
-        <Alert 
-          severity="error" 
-          sx={{ 
-            mb: 2,
-            backgroundColor: 'rgba(139, 0, 0, 0.9)',
-            color: 'white',
-            fontSize: '1.1rem',
-            fontWeight: 'bold'
-          }}
-          icon={<Warning sx={{ color: 'white' }} />}
-        >
-          🚨 CRITICAL FLOOD CONDITIONS PERSIST - Rescue vehicle remains active (IMMEDIATE rescue completed)
-        </Alert>
-      )}
-
-      {loading ? (
-        <Box display="flex" justifyContent="center" mt={10}>
-          <CircularProgress sx={{ color: '#0077b6' }} />
-        </Box>
-      ) : floodData ? (
-        <Grid container spacing={3}>
-          {/* Main Monitoring Cards */}
-          <Grid item xs={12}>
-            <Stack direction="row" spacing={2} mb={3}>
-              <Card sx={{ flex: 1, textAlign: 'center' }}>
-                <CardContent>
-                  <Water sx={{ fontSize: 40, mb: 1, color: '#0077b6' }} />
-                  <Typography variant="h6">Water Volume</Typography>
-                  <Typography variant="h3">{floodData.liters ?? 0} L</Typography>
-                  {floodData.distance && (
-                    <Typography variant="body2" color="text.secondary">
-                      {floodData.distance} cm depth
-                    </Typography>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card sx={{ flex: 1, textAlign: 'center' }}>
-                <CardContent>
-                  <Dashboard sx={{ fontSize: 40, mb: 1, color: '#2d6a4f' }} />
-                  <Typography variant="h6">Pump Status</Typography>
-                  <Chip
-                    label={floodData.pump || 'OFF'}
-                    color={floodData.pump === 'ON' ? 'success' : 'error'}
-                    sx={{ fontWeight: 'bold', fontSize: '1rem' }}
-                  />
-                  {floodData.mode && (
-                    <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                      Mode: {floodData.mode}
-                    </Typography>
-                  )}
-                </CardContent>
-              </Card>
-
-              <Card sx={{ flex: 1, textAlign: 'center', backgroundColor: alertColors[getAlertStatus(floodData.liters)] + '22' }}>
-                <CardContent>
-                  {getAlertStatus(floodData.liters) === 'critical' ? (
-                    <Warning sx={{ fontSize: 40, mb: 1, color: alertColors.critical }} />
-                  ) : getAlertStatus(floodData.liters) === 'warning' ? (
-                    <Warning sx={{ fontSize: 40, mb: 1, color: alertColors.warning }} />
-                  ) : (
-                    <CheckCircle sx={{ fontSize: 40, mb: 1, color: alertColors.normal }} />
-                  )}
-                  <Typography variant="h6">Alert Status</Typography>
-                  <Typography variant="h3" sx={{ textTransform: 'uppercase', color: alertColors[getAlertStatus(floodData.liters)] }}>
-                    {getAlertStatus(floodData.liters)}
-                  </Typography>
-                  {/* 🚨 Auto-rescue status indicator */}
-                  {criticalFloodDetected && !autoRescueCompleted && (
-                    <Chip 
-                      label="RESCUE ARMED" 
-                      size="small" 
-                      sx={{ 
-                        mt: 1,
-                        backgroundColor: '#DC143C', 
-                        color: 'white',
-                        fontWeight: 'bold',
-                        animation: 'pulse 2s infinite'
-                      }}
-                    />
-                  )}
-                  {autoRescueCompleted && (
-                    <Chip 
-                      label="RESCUE ACTIVE" 
-                      size="small" 
-                      sx={{ 
-                        mt: 1,
-                        backgroundColor: '#0077b6', 
-                        color: 'white',
-                        fontWeight: 'bold'
-                      }}
-                    />
-                  )}
-                </CardContent>
-              </Card>
-            </Stack>
-          </Grid>
-
-          {/* 🚨 AUTO-RESCUE STATUS CARD - UPDATED FOR IMMEDIATE RESCUE */}
-          <Grid item xs={12} md={6}>
-            <Paper sx={{ p: 3, backgroundColor: '#F0F8FF', border: '2px solid #0077b6' }}>
-              <Typography variant="h6" sx={{ color: '#0077b6', fontWeight: 600, mb: 2 }}>
-                🤖 Flood Auto-Rescue System (IMMEDIATE ACTIVATION)
-              </Typography>
-              <Grid container spacing={2}>
-                <Grid item xs={6}>
-                  <Typography variant="body2" sx={{ color: '#333' }}>
-                    <b>Warning Threshold:</b> ≥{FLOOD_DETECTION.WARNING_LITERS_THRESHOLD}L
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: '#333' }}>
-                    <b>Critical Threshold:</b> ≥{FLOOD_DETECTION.CRITICAL_LITERS_THRESHOLD}L
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: '#333' }}>
-                    <b>Current Volume:</b> {floodData.liters}L
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: '#333' }}>
-                    <b>Auto-Activation:</b> {
-                      autoRescueCompleted ? '✅ COMPLETED (ACTIVE)' :
-                      criticalFloodDetected ? '🔴 ARMED' : '🟢 MONITORING'
-                    }
-                  </Typography>
-                </Grid>
-                <Grid item xs={6}>
-                  <Typography variant="body2" sx={{ color: '#333' }}>
-                    <b>Last Activation:</b> {lastAutoRescueTime ? new Date(lastAutoRescueTime).toLocaleTimeString() : 'Never'}
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: '#333' }}>
-                    <b>Rescue Vehicle:</b> {rescueActive ? '🚑 ACTIVE' : '⏸️ STANDBY'}
-                  </Typography>
-                  <Typography variant="body2" sx={{ color: '#333' }}>
-                    <b>Status:</b> {autoRescueCompleted ? '✅ IMMEDIATE COMPLETE' : '🟢 READY'}
-                  </Typography>
-                </Grid>
-              </Grid>
-              
-              {/* Status Description */}
-              <Box mt={2} p={2} sx={{ backgroundColor: '#E8F4F8', borderRadius: 1 }}>
-                <Typography variant="body2" sx={{ color: '#0077b6', fontWeight: 600 }}>
-                  🔍 How it works:
+            <Box display="flex" alignItems="center">
+              <Button
+                startIcon={<ArrowBack />}
+                onClick={() => navigate('/')}
+                sx={{ 
+                  color: '#465C88', 
+                  mr: 3,
+                  borderRadius: 3,
+                  px: 3,
+                  py: 1.5,
+                  border: '2px solid #465C88',
+                  fontWeight: 600,
+                  '&:hover': {
+                    backgroundColor: 'rgba(70, 92, 136, 0.1)',
+                    transform: 'scale(1.02)',
+                  }
+                }}
+              >
+                Back to Home
+              </Button>
+              <Box>
+                <Typography 
+                  variant="h3" 
+                  sx={{ 
+                    background: "linear-gradient(135deg, #FF7A30 0%, #465C88 100%)",
+                    backgroundClip: "text",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    fontWeight: 700,
+                    lineHeight: 1.2,
+                  }}
+                >
+                  Flood Emergency Dashboard
                 </Typography>
-                <Typography variant="body2" sx={{ color: '#333', fontSize: '0.9rem' }}>
-                  • <b>Warning:</b> ≥{FLOOD_DETECTION.WARNING_LITERS_THRESHOLD}L water volume<br />
-                  • <b>Critical:</b> ≥{FLOOD_DETECTION.CRITICAL_LITERS_THRESHOLD}L - triggers <b>IMMEDIATE</b> rescue (no delay)<br />
-                  • Vehicle activates instantly and remains active<br />
-                  • Manual reset required to re-enable auto-trigger<br />
-                  • Manual override always available
+                <Typography
+                  variant="h6"
+                  sx={{ 
+                    color: "#465C88",
+                    fontWeight: 500,
+                    mt: 0.5,
+                  }}
+                >
+                  Real-time Flood Monitoring & Response System
                 </Typography>
               </Box>
+            </Box>
+            <Box 
+              display="flex" 
+              alignItems="center" 
+              gap={2}
+              sx={{
+                background: wsConnected ? "rgba(70, 92, 136, 0.1)" : "rgba(220, 20, 60, 0.1)",
+                px: 3,
+                py: 1.5,
+                borderRadius: 3,
+                border: `2px solid ${wsConnected ? '#465C88' : '#DC143C'}`,
+              }}
+            >
+              {wsConnected ? (
+                <Wifi sx={{ color: '#465C88', fontSize: 28 }} />
+              ) : (
+                <WifiOff sx={{ color: '#DC143C', fontSize: 28 }} />
+              )}
+              <Box>
+                <Typography 
+                  variant="body1" 
+                  sx={{ 
+                    color: wsConnected ? '#465C88' : '#DC143C',
+                    fontWeight: 600,
+                  }}
+                >
+                  {connectionStatus}
+                </Typography>
+                <Typography 
+                  variant="caption" 
+                  sx={{ 
+                    color: wsConnected ? '#465C88' : '#DC143C',
+                    opacity: 0.8,
+                  }}
+                >
+                  {wsConnected ? 'Real-time Connected' : 'Connection Lost'}
+                </Typography>
+              </Box>
+            </Box>
+          </Box>
 
-              {/* Reset Button */}
-              {autoRescueCompleted && (
-                <Box mt={2}>
-                  <Button
-                    variant="outlined"
-                    size="small"
-                    onClick={resetAutoRescueSystem}
-                    sx={{
-                      borderColor: '#0077b6',
-                      color: '#0077b6',
-                      '&:hover': { backgroundColor: 'rgba(0, 119, 182, 0.1)' }
+          {/* 🚨 AUTO-RESCUE TRIGGERED NOTIFICATION (IMMEDIATE) */}
+          {autoRescueTriggered && (
+            <Alert 
+              severity="error" 
+              sx={{ 
+                mb: 3,
+                backgroundColor: 'rgba(220, 20, 60, 0.9)',
+                color: 'white',
+                fontSize: '1.2rem',
+                fontWeight: 700,
+                borderRadius: 4,
+                boxShadow: '0 8px 32px rgba(220, 20, 60, 0.3)',
+                animation: 'pulse 1s infinite',
+                border: '2px solid #DC143C',
+              }}
+              icon={<Emergency sx={{ color: 'white', fontSize: 32 }} />}
+            >
+              🚨 CRITICAL FLOOD DETECTED! RESCUE VEHICLE ACTIVATED IMMEDIATELY! (ONE-TIME ACTIVATION)
+            </Alert>
+          )}
+
+          {/* 🚨 AUTO-RESCUE COMPLETED NOTIFICATION */}
+          {autoRescueCompleted && !autoRescueTriggered && (
+            <Alert 
+              severity="info" 
+              sx={{ 
+                mb: 3,
+                backgroundColor: 'rgba(255, 122, 48, 0.9)',
+                color: 'white',
+                fontSize: '1.0rem',
+                fontWeight: 600,
+                borderRadius: 4,
+                boxShadow: '0 8px 32px rgba(255, 122, 48, 0.3)',
+                border: '2px solid #FF7A30',
+              }}
+              action={
+                <Button 
+                  color="inherit" 
+                  size="small" 
+                  onClick={resetAutoRescueSystem}
+                  sx={{ 
+                    color: 'white', 
+                    borderColor: 'white',
+                    borderRadius: 2,
+                    fontWeight: 600,
+                    '&:hover': {
+                      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                    }
+                  }}
+                >
+                  RESET SYSTEM
+                </Button>
+              }
+            >
+              ✅ FLOOD AUTO-RESCUE COMPLETED - Vehicle activated IMMEDIATELY, remains active during critical conditions
+            </Alert>
+          )}
+
+          {/* 🚨 CRITICAL FLOOD PERSISTENT ALERT */}
+          {criticalFloodDetected && autoRescueCompleted && !autoRescueTriggered && (
+            <Alert 
+              severity="error" 
+              sx={{ 
+                mb: 3,
+                backgroundColor: 'rgba(139, 0, 0, 0.9)',
+                color: 'white',
+                fontSize: '1.1rem',
+                fontWeight: 600,
+                borderRadius: 4,
+                boxShadow: '0 8px 32px rgba(139, 0, 0, 0.3)',
+                border: '2px solid #8B0000',
+              }}
+              icon={<Warning sx={{ color: 'white', fontSize: 28 }} />}
+            >
+              🚨 CRITICAL FLOOD CONDITIONS PERSIST - Rescue vehicle remains active (IMMEDIATE rescue completed)
+            </Alert>
+          )}
+
+          {loading ? (
+            <Box 
+              display="flex" 
+              flexDirection="column"
+              justifyContent="center" 
+              alignItems="center"
+              sx={{ 
+                mt: 10,
+                p: 6,
+                borderRadius: 4,
+                background: "linear-gradient(135deg, #FFFFFF 0%, #F8F8F8 100%)",
+                boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)",
+              }}
+            >
+              <CircularProgress 
+                size={60}
+                sx={{ 
+                  color: '#FF7A30',
+                  mb: 3,
+                  '& .MuiCircularProgress-circle': {
+                    strokeLinecap: 'round',
+                  }
+                }} 
+              />
+              <Typography 
+                variant="h6" 
+                sx={{ 
+                  color: '#465C88',
+                  fontWeight: 600,
+                  mb: 1,
+                }}
+              >
+                Loading Flood Data...
+              </Typography>
+              <Typography 
+                variant="body2" 
+                sx={{ 
+                  color: '#465C88',
+                  opacity: 0.7,
+                }}
+              >
+                Connecting to monitoring systems
+              </Typography>
+            </Box>
+          ) : floodData ? (
+            <Grid container spacing={4}>
+              {/* Main Monitoring Cards */}
+              <Grid item xs={12}>
+                <Stack direction={{ xs: "column", md: "row" }} spacing={3} mb={4}>
+                  <Card 
+                    sx={{ 
+                      flex: 1, 
+                      textAlign: 'center',
+                      background: "linear-gradient(135deg, #FFFFFF 0%, #F8FFFE 100%)",
+                      border: '2px solid rgba(79, 195, 247, 0.3)',
+                      position: "relative",
+                      overflow: "hidden",
+                      '&::before': {
+                        content: '""',
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        height: 4,
+                        background: 'linear-gradient(90deg, #4FC3F7, #03A9F4)',
+                      },
                     }}
                   >
-                    🔄 Reset Auto-Rescue System
-                  </Button>
-                </Box>
-              )}
-            </Paper>
-          </Grid>
+                    <CardContent sx={{ pt: 4 }}>
+                      <Box
+                        sx={{
+                          width: 60,
+                          height: 60,
+                          borderRadius: "50%",
+                          background: "linear-gradient(135deg, #4FC3F7, #03A9F4)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          mx: "auto",
+                          mb: 2,
+                          boxShadow: "0 4px 16px rgba(79, 195, 247, 0.3)",
+                        }}
+                      >
+                        <Water sx={{ fontSize: 32, color: '#FFFFFF' }} />
+                      </Box>
+                      <Typography variant="h6" sx={{ color: '#465C88', fontWeight: 600, mb: 1 }}>
+                        Water Volume
+                      </Typography>
+                      <Typography 
+                        variant="h2" 
+                        sx={{ 
+                          color: '#4FC3F7',
+                          fontWeight: 700,
+                          mb: 1,
+                        }}
+                      >
+                        {floodData.liters ?? 0} L
+                      </Typography>
+                      {floodData.distance && (
+                        <Typography variant="body2" sx={{ color: '#465C88', opacity: 0.8 }}>
+                          {floodData.distance} cm depth
+                        </Typography>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  <Card 
+                    sx={{ 
+                      flex: 1, 
+                      textAlign: 'center',
+                      background: "linear-gradient(135deg, #FFFFFF 0%, #F8FFF8 100%)",
+                      border: '2px solid rgba(70, 92, 136, 0.3)',
+                      position: "relative",
+                      overflow: "hidden",
+                      '&::before': {
+                        content: '""',
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        height: 4,
+                        background: 'linear-gradient(90deg, #465C88, #3f5175)',
+                      },
+                    }}
+                  >
+                    <CardContent sx={{ pt: 4 }}>
+                      <Box
+                        sx={{
+                          width: 60,
+                          height: 60,
+                          borderRadius: "50%",
+                          background: "linear-gradient(135deg, #465C88, #3f5175)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          mx: "auto",
+                          mb: 2,
+                          boxShadow: "0 4px 16px rgba(70, 92, 136, 0.3)",
+                        }}
+                      >
+                        <Dashboard sx={{ fontSize: 32, color: '#FFFFFF' }} />
+                      </Box>
+                      <Typography variant="h6" sx={{ color: '#465C88', fontWeight: 600, mb: 2 }}>
+                        Pump Status
+                      </Typography>
+                      <Chip
+                        label={floodData.pump || 'OFF'}
+                        color={floodData.pump === 'ON' ? 'success' : 'error'}
+                        sx={{ 
+                          fontWeight: 700, 
+                          fontSize: '1.1rem',
+                          px: 2,
+                          py: 1,
+                          height: 'auto',
+                          borderRadius: 3,
+                        }}
+                      />
+                      {floodData.mode && (
+                        <Typography variant="body2" sx={{ color: '#465C88', opacity: 0.8, mt: 2 }}>
+                          Mode: {floodData.mode}
+                        </Typography>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  <Card 
+                    sx={{ 
+                      flex: 1, 
+                      textAlign: 'center',
+                      background: `linear-gradient(135deg, #FFFFFF 0%, ${alertColors[getAlertStatus(floodData.liters)]}08 100%)`,
+                      border: `2px solid ${alertColors[getAlertStatus(floodData.liters)]}40`,
+                      position: "relative",
+                      overflow: "hidden",
+                      '&::before': {
+                        content: '""',
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        height: 4,
+                        background: alertColors[getAlertStatus(floodData.liters)],
+                      },
+                    }}
+                  >
+                    <CardContent sx={{ pt: 4 }}>
+                      <Box
+                        sx={{
+                          width: 60,
+                          height: 60,
+                          borderRadius: "50%",
+                          background: alertColors[getAlertStatus(floodData.liters)],
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          mx: "auto",
+                          mb: 2,
+                          boxShadow: `0 4px 16px ${alertColors[getAlertStatus(floodData.liters)]}40`,
+                        }}
+                      >
+                        {getAlertStatus(floodData.liters) === 'critical' ? (
+                          <Warning sx={{ fontSize: 32, color: '#FFFFFF' }} />
+                        ) : getAlertStatus(floodData.liters) === 'warning' ? (
+                          <Warning sx={{ fontSize: 32, color: '#FFFFFF' }} />
+                        ) : (
+                          <CheckCircle sx={{ fontSize: 32, color: '#FFFFFF' }} />
+                        )}
+                      </Box>
+                      <Typography variant="h6" sx={{ color: '#465C88', fontWeight: 600, mb: 1 }}>
+                        Alert Status
+                      </Typography>
+                      <Typography 
+                        variant="h4" 
+                        sx={{ 
+                          textTransform: 'uppercase', 
+                          color: alertColors[getAlertStatus(floodData.liters)],
+                          fontWeight: 700,
+                          mb: 2,
+                        }}
+                      >
+                        {getAlertStatus(floodData.liters)}
+                      </Typography>
+                      {/* 🚨 Auto-rescue status indicator */}
+                      {criticalFloodDetected && !autoRescueCompleted && (
+                        <Chip 
+                          label="RESCUE ARMED" 
+                          size="small" 
+                          sx={{ 
+                            backgroundColor: '#DC143C', 
+                            color: 'white',
+                            fontWeight: 700,
+                            borderRadius: 2,
+                            animation: 'pulse 2s infinite'
+                          }}
+                        />
+                      )}
+                      {autoRescueCompleted && (
+                        <Chip 
+                          label="RESCUE ACTIVE" 
+                          size="small" 
+                          sx={{ 
+                            backgroundColor: '#FF7A30', 
+                            color: 'white',
+                            fontWeight: 700,
+                            borderRadius: 2,
+                          }}
+                        />
+                      )}
+                    </CardContent>
+                  </Card>
+                </Stack>
+              </Grid>
+
+              {/* 🚨 AUTO-RESCUE STATUS CARD - UPDATED FOR IMMEDIATE RESCUE */}
+              <Grid item xs={12} md={6}>
+                <Paper 
+                  sx={{ 
+                    p: 4, 
+                    background: "linear-gradient(135deg, #FFFFFF 0%, #F0F8FF 100%)",
+                    border: '3px solid #FF7A30',
+                    borderRadius: 4,
+                    position: "relative",
+                    overflow: "hidden",
+                    '&::before': {
+                      content: '""',
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: 4,
+                      background: 'linear-gradient(90deg, #FF7A30, #465C88)',
+                    },
+                  }}
+                >
+                  <Box display="flex" alignItems="center" mb={3}>
+                    <Box
+                      sx={{
+                        width: 50,
+                        height: 50,
+                        borderRadius: "50%",
+                        background: "linear-gradient(135deg, #FF7A30, #465C88)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        mr: 2,
+                        boxShadow: "0 4px 16px rgba(255, 122, 48, 0.3)",
+                      }}
+                    >
+                      <Typography sx={{ fontSize: '1.5rem' }}>🤖</Typography>
+                    </Box>
+                    <Typography 
+                      variant="h6" 
+                      sx={{ 
+                        color: '#465C88', 
+                        fontWeight: 700,
+                      }}
+                    >
+                      Flood Auto-Rescue System (IMMEDIATE ACTIVATION)
+                    </Typography>
+                  </Box>
+                  
+                  <Grid container spacing={3}>
+                    <Grid item xs={6}>
+                      <Typography variant="body2" sx={{ color: '#465C88', mb: 1, fontWeight: 500 }}>
+                        <b>Warning Threshold:</b> ≥{FLOOD_DETECTION.WARNING_LITERS_THRESHOLD}L
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: '#465C88', mb: 1, fontWeight: 500 }}>
+                        <b>Critical Threshold:</b> ≥{FLOOD_DETECTION.CRITICAL_LITERS_THRESHOLD}L
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: '#465C88', mb: 1, fontWeight: 500 }}>
+                        <b>Current Volume:</b> {floodData.liters}L
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: '#465C88', mb: 1, fontWeight: 500 }}>
+                        <b>Auto-Activation:</b> {
+                          autoRescueCompleted ? '✅ COMPLETED (ACTIVE)' :
+                          criticalFloodDetected ? '🔴 ARMED' : '🟢 MONITORING'
+                        }
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={6}>
+                      <Typography variant="body2" sx={{ color: '#465C88', mb: 1, fontWeight: 500 }}>
+                        <b>Last Activation:</b> {lastAutoRescueTime ? new Date(lastAutoRescueTime).toLocaleTimeString() : 'Never'}
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: '#465C88', mb: 1, fontWeight: 500 }}>
+                        <b>Rescue Vehicle:</b> {rescueActive ? '🚑 ACTIVE' : '⏸️ STANDBY'}
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: '#465C88', mb: 1, fontWeight: 500 }}>
+                        <b>Status:</b> {autoRescueCompleted ? '✅ IMMEDIATE COMPLETE' : '🟢 READY'}
+                      </Typography>
+                    </Grid>
+                  </Grid>
+                  
+                  {/* Status Description */}
+                  <Box 
+                    mt={3} 
+                    p={3} 
+                    sx={{ 
+                      background: "linear-gradient(135deg, #E8F4F8 0%, #F0F8FF 100%)",
+                      borderRadius: 3,
+                      border: '1px solid rgba(255, 122, 48, 0.2)',
+                    }}
+                  >
+                    <Typography variant="body2" sx={{ color: '#FF7A30', fontWeight: 700, mb: 1 }}>
+                      🔍 How it works:
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: '#465C88', fontSize: '0.9rem', lineHeight: 1.6 }}>
+                      • <b>Warning:</b> ≥{FLOOD_DETECTION.WARNING_LITERS_THRESHOLD}L water volume<br />
+                      • <b>Critical:</b> ≥{FLOOD_DETECTION.CRITICAL_LITERS_THRESHOLD}L - triggers <b>IMMEDIATE</b> rescue (no delay)<br />
+                      • Vehicle activates instantly and remains active<br />
+                      • Manual reset required to re-enable auto-trigger<br />
+                      • Manual override always available
+                    </Typography>
+                  </Box>
+
+                  {/* Reset Button */}
+                  {autoRescueCompleted && (
+                    <Box mt={3}>
+                      <Button
+                        variant="outlined"
+                        size="medium"
+                        onClick={resetAutoRescueSystem}
+                        sx={{
+                          borderColor: '#FF7A30',
+                          color: '#FF7A30',
+                          fontWeight: 600,
+                          borderRadius: 3,
+                          px: 3,
+                          py: 1.5,
+                          '&:hover': { 
+                            backgroundColor: 'rgba(255, 122, 48, 0.1)',
+                            borderColor: '#465C88',
+                            color: '#465C88',
+                          }
+                        }}
+                      >
+                        🔄 Reset Auto-Rescue System
+                      </Button>
+                    </Box>
+                  )}
+                </Paper>
+              </Grid>
 
           {/* Control Panel */}
           <Grid item xs={12} md={6}>
@@ -837,7 +1313,14 @@ const FloodDashboard = () => {
           </Grid>
         </Grid>
       ) : (
-        <Alert severity="warning">
+        <Alert 
+          severity="warning"
+          sx={{
+            borderRadius: 3,
+            fontSize: '1.1rem',
+            fontWeight: 500,
+          }}
+        >
           No flood data available. ESP32 may not be connected.
         </Alert>
       )}
@@ -850,7 +1333,9 @@ const FloodDashboard = () => {
           100% { opacity: 1; }
         }
       `}</style>
-    </Container>
+        </Container>
+      </Box>
+    </ThemeProvider>
   );
 };
 
