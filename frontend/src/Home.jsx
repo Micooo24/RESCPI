@@ -53,20 +53,128 @@ ChartJS.register(
   Filler
 );
 
-// Updated theme with new color scheme
-const minimalTheme = createTheme({
+// Updated theme with new color scheme and Poppins font
+const modernTheme = createTheme({
+  typography: {
+    fontFamily: [
+      'Poppins',
+      '-apple-system',
+      'BlinkMacSystemFont',
+      '"Segoe UI"',
+      'Roboto',
+      '"Helvetica Neue"',
+      'Arial',
+      'sans-serif',
+    ].join(','),
+    h1: {
+      fontWeight: 700,
+      letterSpacing: '-0.025em',
+    },
+    h2: {
+      fontWeight: 600,
+      letterSpacing: '-0.02em',
+    },
+    h3: {
+      fontWeight: 600,
+      letterSpacing: '-0.015em',
+    },
+    h4: {
+      fontWeight: 600,
+      letterSpacing: '-0.01em',
+    },
+    h5: {
+      fontWeight: 600,
+    },
+    h6: {
+      fontWeight: 600,
+    },
+    body1: {
+      fontWeight: 400,
+      lineHeight: 1.6,
+    },
+    body2: {
+      fontWeight: 400,
+      lineHeight: 1.5,
+    },
+    button: {
+      fontWeight: 600,
+      letterSpacing: '0.02em',
+      textTransform: 'none',
+    },
+  },
   palette: {
     background: {
-      default: "#F5F5DD",
+      default: "#E9E3DF",
+      paper: "#FFFFFF",
     },
     text: {
-      primary: "#34623f",
+      primary: "#000000",
+      secondary: "#465C88",
     },
     primary: {
-      main: "#F5F5DD",
+      main: "#FF7A30",
+      contrastText: "#FFFFFF",
     },
     secondary: {
-      main: "#34623f",
+      main: "#465C88",
+      contrastText: "#FFFFFF",
+    },
+    error: {
+      main: "#000000",
+    },
+    warning: {
+      main: "#FF7A30",
+    },
+    success: {
+      main: "#465C88",
+    },
+  },
+  shape: {
+    borderRadius: 16,
+  },
+  shadows: [
+    'none',
+    '0 2px 8px rgba(0, 0, 0, 0.05)',
+    '0 4px 16px rgba(0, 0, 0, 0.08)',
+    '0 8px 24px rgba(0, 0, 0, 0.12)',
+    '0 12px 32px rgba(0, 0, 0, 0.15)',
+    '0 16px 40px rgba(0, 0, 0, 0.18)',
+    '0 20px 48px rgba(0, 0, 0, 0.2)',
+    ...Array(18).fill('0 24px 56px rgba(0, 0, 0, 0.25)'),
+  ],
+  components: {
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          borderRadius: 12,
+          textTransform: 'none',
+          fontSize: '1rem',
+          fontWeight: 600,
+          padding: '12px 32px',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          '&:hover': {
+            transform: 'translateY(-2px)',
+            boxShadow: '0 8px 24px rgba(0, 0, 0, 0.15)',
+          },
+        },
+      },
+    },
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          borderRadius: 20,
+          border: 'none',
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        },
+      },
+    },
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          borderRadius: 20,
+          border: 'none',
+        },
+      },
     },
   },
 });
@@ -85,15 +193,15 @@ const Home = () => {
   const [landslideWsConnection, setLandslideWsConnection] = useState(null);
   const [gasFireWsConnection, setGasFireWsConnection] = useState(null);
 
-  // Disaster type cards with new color schemes
+  // Updated disaster types with uniform color scheme
   const disasterTypes = [
     {
       title: "Fire",
       icon: <LocalFireDepartment sx={{ fontSize: 45 }} />,
       colors: {
-        primary: "#cc4a02",
-        secondary: "#DC143C",
-        third: "#1F51FF"
+        primary: "#FF7A30",
+        secondary: "#465C88",
+        third: "#000000"
       },
       route: "/Fire_disaster/firedashboard",
     },
@@ -101,9 +209,9 @@ const Home = () => {
       title: "Flood",
       icon: <Flood sx={{ fontSize: 45 }} />,
       colors: {
-        primary: "#cc4a02",
-        secondary: "#66FF00",
-        third: "#1F51FF"
+        primary: "#FF7A30",
+        secondary: "#465C88",
+        third: "#000000"
       },
       route: "/Flood_disaster/flooddashboard",
     },
@@ -111,9 +219,9 @@ const Home = () => {
       title: "Landslide",
       icon: <Landslide sx={{ fontSize: 45 }} />,
       colors: {
-        primary: "#cc4a02",
-        secondary: "#66FF00",
-        third: "#1F51FF"
+        primary: "#FF7A30",
+        secondary: "#465C88",
+        third: "#000000"
       },
       route: "/landslidedisaster/landslidedashboard",
     },
@@ -1025,67 +1133,112 @@ const Home = () => {
   };
 
   return (
-    <ThemeProvider theme={minimalTheme}>
+    <ThemeProvider theme={modernTheme}>
+      {/* Import Poppins Font */}
+      <link
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet"
+      />
+      
       <Box
         sx={{
           minHeight: "100vh",
-          backgroundColor: "#F5F5DD",
+          background: "linear-gradient(135deg, #E9E3DF 0%, #F5F0EC 100%)",
           py: 3,
           overflow: "auto",
+          position: "relative",
         }}
       >
+        {/* Background Pattern */}
+        <Box
+          sx={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            opacity: 0.03,
+            backgroundImage: `
+              radial-gradient(circle at 25% 25%, #FF7A30 0%, transparent 50%),
+              radial-gradient(circle at 75% 75%, #465C88 0%, transparent 50%)
+            `,
+            zIndex: 0,
+          }}
+        />
         <Container
-          maxWidth="xl"
+          maxWidth={false}
           sx={{
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
             px: { xs: 2, sm: 3, md: 4 },
+            maxWidth: "1600px",
+            mx: "auto",
+            position: "relative",
+            zIndex: 1,
           }}
         >
           {/* Header Section */}
-          <Box sx={{ textAlign: "center", mb: { xs: 4, md: 5 } }}>
+          <Box sx={{ textAlign: "center", mb: { xs: 6, md: 8 } }}>
             <Typography
-              variant="h3"
+              variant="h1"
               component="h1"
               sx={{ 
-                mb: 1,
-                color: "#34623f",
-                fontWeight: 700,
-                fontSize: { xs: "2rem", sm: "2.5rem", md: "3rem" }
+                fontSize: { xs: "3rem", md: "4.5rem" },
+                fontWeight: 800,
+                background: "linear-gradient(135deg, #FF7A30 0%, #465C88 100%)",
+                backgroundClip: "text",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                mb: 2,
+                lineHeight: 1.1,
               }}
             >
               RESCPI
             </Typography>
             
             <Typography
-              variant="h6"
+              variant="h5"
               sx={{ 
-                color: "#34623f",
-                opacity: 0.8,
-                fontSize: { xs: "1rem", sm: "1.1rem", md: "1.25rem" }
+                color: "#465C88",
+                fontWeight: 500,
+                mb: 1,
+                fontSize: { xs: "1.2rem", md: "1.5rem" },
               }}
             >
               Disaster Management System
             </Typography>
+            
+            <Typography
+              variant="body1"
+              sx={{
+                color: "rgba(70, 92, 136, 0.7)",
+                maxWidth: 600,
+                mx: "auto",
+                fontSize: "1.1rem",
+                lineHeight: 1.6,
+              }}
+            >
+              Advanced real-time monitoring and emergency response system
+            </Typography>
           </Box>
 
           {/* House Cards Section */}
-          <Box 
-            sx={{ 
-              display: "grid",
-              gridTemplateColumns: {
-                xs: "1fr",
-                sm: "repeat(2, 1fr)",
-                lg: "repeat(3, 1fr)",
-              },
-              gap: { xs: 3, sm: 4, md: 5 },
-              width: "100%",
-              maxWidth: 1000,
-              mb: { xs: 5, md: 7 },
-              justifyItems: "center",
-            }}
-          >
+          <Box sx={{ display: "flex", justifyContent: "center", mb: { xs: 6, md: 8 } }}>
+            <Box 
+              sx={{ 
+                display: "grid",
+                gridTemplateColumns: {
+                  xs: "1fr",
+                  sm: "repeat(2, 1fr)",
+                  lg: "repeat(3, 1fr)",
+                },
+                gap: { xs: 4, sm: 5, md: 6 },
+                width: "100%",
+                maxWidth: 1400,
+                justifyItems: "center",
+              }}
+            >
             {disasterTypes.map((disaster, index) => (
               <Box
                 key={index}
@@ -1095,153 +1248,164 @@ const Home = () => {
                   cursor: "pointer",
                   transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
                   "&:hover": {
-                    transform: "translateY(-12px) scale(1.02)",
-                    "& .house-roof": {
-                      borderBottomColor: disaster.colors.primary,
+                    transform: "translateY(-15px) scale(1.03)",
+                    "& .modern-house-roof": {
+                      transform: "scale(1.05)",
                       filter: "brightness(1.15) saturate(1.2)",
+                    },
+                    "& .modern-house-card": {
+                      boxShadow: `0 25px 50px ${disaster.colors.primary}30`,
+                      border: `3px solid ${disaster.colors.primary}`,
+                    },
+                    "& .modern-house-door": {
                       transform: "scale(1.05)",
-                    },
-                    "& .house-card": {
-                      boxShadow: `0 20px 40px rgba(204, 74, 2, 0.25), 0 0 0 3px ${disaster.colors.third}20`,
-                      borderColor: disaster.colors.secondary,
-                    },
-                    "& .house-door": {
-                      backgroundColor: disaster.colors.primary,
-                      filter: "brightness(1.15)",
-                      transform: "scale(1.05)",
-                    },
-                    "& .house-windows": {
-                      borderColor: disaster.colors.secondary,
-                      backgroundColor: disaster.colors.third,
-                      transform: "scale(1.1)",
-                    },
-                    "& .house-icon": {
-                      transform: "scale(1.1) rotate(5deg)",
-                    },
-                    "& .house-title": {
-                      transform: "scale(1.05)",
-                      color: disaster.colors.secondary,
                       filter: "brightness(1.1)",
+                    },
+                    "& .modern-house-windows": {
+                      transform: "scale(1.1)",
+                      boxShadow: `0 0 20px ${disaster.colors.secondary}40`,
+                    },
+                    "& .modern-house-icon": {
+                      transform: "scale(1.2) rotate(8deg)",
+                    },
+                    "& .modern-house-title": {
+                      transform: "scale(1.05)",
+                      color: disaster.colors.primary,
+                    },
+                    "& .modern-house-chimney": {
+                      filter: "brightness(1.2)",
                     },
                   },
                 }}
                 onClick={() => navigate(disaster.route)}
               >
-                {/* House Roof */}
+                {/* Modern House Roof */}
                 <Box
-                  className="house-roof"
+                  className="modern-house-roof"
                   sx={{
                     width: 0,
                     height: 0,
-                    borderLeft: { xs: "120px solid transparent", sm: "130px solid transparent", md: "140px solid transparent" },
-                    borderRight: { xs: "120px solid transparent", sm: "130px solid transparent", md: "140px solid transparent" },
-                    borderBottom: { xs: `35px solid ${disaster.colors.primary}`, sm: `38px solid ${disaster.colors.primary}`, md: `40px solid ${disaster.colors.primary}` },
+                    borderLeft: { xs: "140px solid transparent", sm: "150px solid transparent", md: "160px solid transparent" },
+                    borderRight: { xs: "140px solid transparent", sm: "150px solid transparent", md: "160px solid transparent" },
+                    borderBottom: { 
+                      xs: `45px solid #282727ff`, 
+                      sm: `48px solid #282727ff`, 
+                      md: `50px solid #282727ff` 
+                    },
                     margin: "0 auto",
                     position: "relative",
                     zIndex: 3,
                     transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+                    filter: `drop-shadow(0 8px 16px ${disaster.colors.primary}40)`,
                   }}
                 />
                 
-                {/* Chimney */}
+                {/* Modern Chimney */}
                 <Box
+                  className="modern-house-chimney"
                   sx={{
-                    width: { xs: 12, md: 15 },
-                    height: { xs: 20, md: 25 },
-                    backgroundColor: disaster.colors.secondary,
+                    width: { xs: 16, md: 20 },
+                    height: { xs: 35, md: 40 },
+                    background: "#353333ff",
                     position: "absolute",
-                    top: { xs: 6, md: 8 },
-                    right: { xs: "calc(50% - 75px)", sm: "calc(50% - 80px)", md: "calc(50% - 85px)" },
+                    top: { xs: 8, md: 10 },
+                    right: { xs: "calc(50% - 90px)", sm: "calc(50% - 95px)", md: "calc(50% - 100px)" },
                     zIndex: 4,
-                    opacity: 0.9,
+                    borderRadius: "4px 4px 0 0",
+                    transition: "all 0.4s ease",
+                    boxShadow: `0 4px 12px ${disaster.colors.secondary}30`,
                   }}
                 />
                 
-                {/* House Body */}
+                {/* Modern House Body */}
                 <Card
-                  className="house-card"
+                  className="modern-house-card"
                   sx={{
-                    backgroundColor: "#F5F5DD",
-                    border: `3px solid ${disaster.colors.primary}`,
+                    background: "linear-gradient(135deg, #FFFFFF 0%, #FAFAFA 100%)",
                     borderTop: "none",
-                    borderRadius: "0 0 12px 12px",
-                    boxShadow: "0 8px 20px rgba(52, 98, 63, 0.15)",
+                    borderRadius: "0 0 20px 20px",
+                    boxShadow: `0 12px 30px ${disaster.colors.primary}20`,
                     marginTop: "-3px",
                     position: "relative",
                     zIndex: 2,
                     transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
-                    minHeight: { xs: 260, sm: 270, md: 280 },
-                    width: { xs: 240, sm: 260, md: 280 },
+                    minHeight: { xs: 320, sm: 340, md: 360 },
+                    width: { xs: 280, sm: 300, md: 320 },
                     margin: "0 auto",
+                    overflow: "hidden",
                   }}
                 >
-                  <CardContent sx={{ py: { xs: 3, md: 4 }, px: 3 }}>
-                    {/* Door */}
+                  {/* Background Pattern
+                  <Box
+                    sx={{
+                      position: "absolute",
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      background: `linear-gradient(135deg, ${disaster.colors.primary}05, ${disaster.colors.secondary}05)`,
+                      zIndex: 0,
+                    }}
+                  /> */}
+
+                  <CardContent sx={{ py: { xs: 3, md: 4 }, px: 3, position: "relative", zIndex: 1 }}>
+                    {/* Modern Door */}
                     <Box
-                      className="house-door"
+                      className="modern-house-door"
                       sx={{
-                        width: { xs: 60, md: 70 },
-                        height: { xs: 80, md: 90 },
-                        backgroundColor: disaster.colors.primary,
-                        margin: "0 auto 20px auto",
-                        borderRadius: "12px 12px 0 0",
+                        width: { xs: 80, md: 90 },
+                        height: { xs: 100, md: 110 },
+                        background: `linear-gradient(135deg, ${disaster.colors.primary}, ${disaster.colors.secondary})`,
+                        margin: "0 auto 25px auto",
+                        borderRadius: "16px 16px 0 0",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
                         position: "relative",
                         transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
-                        boxShadow: `inset 0 2px 4px rgba(0,0,0,0.1)`,
+                        boxShadow: `0 8px 20px ${disaster.colors.primary}30`,
+                        border: `2px solid ${disaster.colors.secondary}20`,
                       }}
                     >
                       <Box 
-                        className="house-icon"
+                        className="modern-house-icon"
                         sx={{ 
-                          color: "#F5F5DD", 
+                          color: "#FFFFFF", 
                           mb: 1,
                           transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+                          filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.3))",
                           "& svg": {
-                            fontSize: { xs: 35, md: 45 }
+                            fontSize: { xs: 40, md: 50 }
                           }
                         }}
                       >
                         {disaster.icon}
                       </Box>
-                      {/* Door Handle */}
-                      <Box
-                        sx={{
-                          width: 8,
-                          height: 8,
-                          backgroundColor: disaster.colors.third,
-                          borderRadius: "50%",
-                          position: "absolute",
-                          right: 10,
-                          top: "50%",
-                          transform: "translateY(-50%)",
-                          boxShadow: "0 1px 2px rgba(0,0,0,0.2)",
-                        }}
-                      />
+
                     </Box>
                     
-                    {/* Windows */}
+                    {/* Modern Windows */}
                     <Box sx={{ display: "flex", justifyContent: "space-around", mb: 3 }}>
                       {[1, 2].map((window) => (
                         <Box
                           key={window}
-                          className="house-windows"
+                          className="modern-house-windows"
                           sx={{
-                            width: { xs: 22, md: 25 },
-                            height: { xs: 22, md: 25 },
+                            width: { xs: 28, md: 32 },
+                            height: { xs: 28, md: 32 },
                             border: `3px solid ${disaster.colors.secondary}`,
-                            backgroundColor: "#ffffff",
+                            background: `linear-gradient(135deg, #E9F7FF, #FFFFFF)`,
+                            borderRadius: "8px",
                             transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
                             position: "relative",
+                            boxShadow: `0 4px 12px ${disaster.colors.secondary}20`,
                             "&::before": {
                               content: '""',
                               position: "absolute",
                               top: "50%",
                               left: "0",
                               right: "0",
-                              height: "1px",
+                              height: "2px",
                               backgroundColor: disaster.colors.secondary,
                               transform: "translateY(-50%)",
                             },
@@ -1251,7 +1415,7 @@ const Home = () => {
                               top: "0",
                               bottom: "0",
                               left: "50%",
-                              width: "1px",
+                              width: "2px",
                               backgroundColor: disaster.colors.secondary,
                               transform: "translateX(-50%)",
                             },
@@ -1260,38 +1424,52 @@ const Home = () => {
                       ))}
                     </Box>
                     
-                    {/* Title */}
+                    {/* Modern Title */}
                     <Typography 
-                      className="house-title"
-                      variant="h5" 
+                      className="modern-house-title"
+                      variant="h4" 
                       sx={{ 
                         color: disaster.colors.primary, 
-                        fontWeight: 600,
+                        fontWeight: 700,
                         transition: "all 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
                         mb: 2,
-                        fontSize: { xs: "1.3rem", md: "1.5rem" }
+                        fontSize: { xs: "1.4rem", md: "1.6rem" },
+                        textShadow: `0 2px 4px ${disaster.colors.primary}20`,
                       }}
                     >
                       {disaster.title}
                     </Typography>
+
+                    {/* Modern Description */}
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        color: "#465C88",
+                        lineHeight: 1.5,
+                        textAlign: "center",
+                        mb: 3,
+                        fontWeight: 500,
+                      }}
+                    >
+                      Emergency Response System
+                    </Typography>
                   </CardContent>
-                  <CardActions sx={{ justifyContent: "center", pb: 3 }}>
+                  
+                  <CardActions sx={{ justifyContent: "center", pb: 3, position: "relative", zIndex: 1 }}>
                     <Button
                       variant="contained"
                       sx={{
-                        backgroundColor: disaster.colors.third,
-                        color: "#ffffff",
-                        px: 4,
-                        py: 1,
-                        borderRadius: 3,
+                        backgroundColor: "#465C88",
+                        color: "#FFFFFF",
+                        px: 5,
+                        py: 1.5,
+                        borderRadius: 4,
                         fontWeight: 600,
-                        fontSize: { xs: "0.85rem", md: "0.9rem" },
+                        fontSize: { xs: "0.9rem", md: "1rem" },
                         transition: "all 0.3s ease",
                         "&:hover": {
-                          backgroundColor: disaster.colors.third,
-                          transform: "scale(1.05)",
-                          boxShadow: `0 6px 16px ${disaster.colors.third}40`,
-                          filter: "brightness(1.1)",
+                          backgroundColor: "#3f5175ff",
+                          transform: "scale(1.05) translateY(-2px)",
                         },
                       }}
                       onClick={(e) => {
@@ -1299,41 +1477,52 @@ const Home = () => {
                         navigate(disaster.route);
                       }}
                     >
-                      Enter
+                      Enter Dashboard
                     </Button>
                   </CardActions>
                 </Card>
               </Box>
             ))}
           </Box>
+        </Box>
 
           {/* Monitoring Charts Section */}
-          <Box 
-            ref={chartSectionRef}
-            sx={{ 
-              width: "100%", 
-              maxWidth: isExpanded ? "100%" : 1200, 
-              mb: { xs: 5, md: 7 },
-              transition: "all 0.3s ease",
-            }}
-          >
+          <Box sx={{ 
+            display: "flex", 
+            justifyContent: "center", 
+            alignItems: "center",
+            width: "100%",
+            mb: { xs: 6, md: 8 }
+          }}>
+            <Box 
+              ref={chartSectionRef}
+              sx={{ 
+                width: "100%", 
+                maxWidth: isExpanded ? "100%" : 1400, 
+                transition: "all 0.3s ease",
+                px: { xs: 2, sm: 3, md: 4 }
+              }}
+            >
             {/* Charts Header */}
             <Box sx={{ 
               display: "flex", 
               alignItems: "center", 
               justifyContent: "space-between", 
-              mb: 4,
+              mb: 6,
               flexWrap: "wrap",
               gap: 2,
             }}>
               <Box sx={{ display: "flex", alignItems: "center", flexWrap: "wrap" }}>
-                <BarChart sx={{ fontSize: { xs: 24, md: 30 }, mr: 2, color: "#cc4a02" }} />
+                <BarChart sx={{ fontSize: { xs: 24, md: 30 }, mr: 2, color: "#FF7A30" }} />
                 <Typography
-                  variant="h4"
+                  variant="h3"
                   sx={{ 
-                    color: "#34623f",
-                    fontWeight: 600,
-                    fontSize: { xs: "1.5rem", sm: "2rem", md: "2.2rem" }
+                    background: " #465C88",
+                    backgroundClip: "text",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    fontWeight: 700,
+                    fontSize: { xs: "1.8rem", sm: "2.2rem", md: "2.5rem" }
                   }}
                 >
                   Real-time Monitoring Dashboard
@@ -1347,11 +1536,11 @@ const Home = () => {
                     onClick={handleRefreshData}
                     disabled={loading}
                     sx={{ 
-                      color: "#66FF00",
-                      border: "2px solid #66FF00",
+                      color: "#FF7A30",
+                      border: "2px solid #FF7A30",
                       fontSize: { xs: "1rem", md: "1.2rem" },
                       "&:hover": {
-                        backgroundColor: "rgba(102, 255, 0, 0.1)",
+                        backgroundColor: "rgba(255, 122, 48, 0.1)",
                       },
                       "&:disabled": {
                         opacity: 0.5,
@@ -1366,11 +1555,11 @@ const Home = () => {
                   <IconButton 
                     onClick={toggleFullScreen}
                     sx={{ 
-                      color: "#1F51FF",
-                      border: "2px solid #1F51FF",
+                      color: "#465C88",
+                      border: "2px solid #465C88",
                       fontSize: { xs: "1rem", md: "1.2rem" },
                       "&:hover": {
-                        backgroundColor: "rgba(31, 81, 255, 0.1)",
+                        backgroundColor: "rgba(70, 92, 136, 0.1)",
                       }
                     }}
                   >
@@ -1382,11 +1571,11 @@ const Home = () => {
                   <IconButton 
                     onClick={toggleExpanded}
                     sx={{ 
-                      color: "#34623f",
-                      border: "2px solid #34623f",
+                      color: "#465C88",
+                      border: "2px solid #465C88",
                       fontSize: { xs: "1rem", md: "1.2rem" },
                       "&:hover": {
-                        backgroundColor: "rgba(52, 98, 63, 0.1)",
+                        backgroundColor: "rgba(70, 92, 136, 0.1)",
                       }
                     }}
                   >
@@ -1400,13 +1589,13 @@ const Home = () => {
                     startIcon={<Print />}
                     onClick={handlePrintCharts}
                     sx={{
-                      backgroundColor: "#cc4a02",
-                      color: "#ffffff",
+                      background: "linear-gradient(135deg, #FF7A30, #465C88)",
+                      color: "#FFFFFF",
                       fontWeight: 600,
                       px: 3,
                       fontSize: { xs: "0.8rem", md: "0.9rem" },
                       "&:hover": {
-                        backgroundColor: "#a03902",
+                        filter: "brightness(1.1)",
                         transform: "scale(1.02)",
                       },
                     }}
@@ -1418,16 +1607,25 @@ const Home = () => {
             </Box>
 
             {/* Connection Status */}
-            <Box sx={{ mb: 4, display: "flex", gap: 2, flexWrap: "wrap", alignItems: "center" }}>
+            <Box sx={{ 
+              mb: 5, 
+              display: "flex", 
+              gap: 2, 
+              flexWrap: "wrap", 
+              alignItems: "center",
+              justifyContent: "center"
+            }}>
               <Typography 
                 variant="body2" 
                 sx={{ 
-                  color: wsConnection?.readyState === WebSocket.OPEN ? "#66FF00" : "#DC143C",
+                  color: wsConnection?.readyState === WebSocket.OPEN ? "#4CAF50" : "#F44336",
                   fontWeight: 600,
-                  px: 2,
-                  py: 0.5,
-                  backgroundColor: "rgba(255,255,255,0.8)",
-                  borderRadius: 1,
+                  px: 3,
+                  py: 1,
+                  backgroundColor: "#FFFFFF",
+                  borderRadius: 3,
+                  border: "1px solid #E9E3DF",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
                 }}
               >
                 💧 Flood: {wsConnection?.readyState === WebSocket.OPEN ? "🟢 Connected" : "🔴 Disconnected"}
@@ -1436,12 +1634,14 @@ const Home = () => {
               <Typography 
                 variant="body2" 
                 sx={{ 
-                  color: landslideWsConnection?.readyState === WebSocket.OPEN ? "#66FF00" : "#DC143C",
+                  color: landslideWsConnection?.readyState === WebSocket.OPEN ? "#4CAF50" : "#F44336",
                   fontWeight: 600,
-                  px: 2,
-                  py: 0.5,
-                  backgroundColor: "rgba(255,255,255,0.8)",
-                  borderRadius: 1,
+                  px: 3,
+                  py: 1,
+                  backgroundColor: "#FFFFFF",
+                  borderRadius: 3,
+                  border: "1px solid #E9E3DF",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
                 }}
               >
                 🏔️ Landslide: {landslideWsConnection?.readyState === WebSocket.OPEN ? "🟢 Connected" : "🔴 Disconnected"}
@@ -1450,12 +1650,14 @@ const Home = () => {
                             <Typography 
                 variant="body2" 
                 sx={{ 
-                  color: gasFireWsConnection?.readyState === WebSocket.OPEN ? "#66FF00" : "#DC143C",
+                  color: gasFireWsConnection?.readyState === WebSocket.OPEN ? "#4CAF50" : "#F44336",
                   fontWeight: 600,
-                  px: 2,
-                  py: 0.5,
-                  backgroundColor: "rgba(255,255,255,0.8)",
-                  borderRadius: 1,
+                  px: 3,
+                  py: 1,
+                  backgroundColor: "#FFFFFF",
+                  borderRadius: 3,
+                  border: "1px solid #E9E3DF",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
                 }}
               >
                 🔥 Gas/Fire: {gasFireWsConnection?.readyState === WebSocket.OPEN ? "🟢 Connected" : "🔴 Disconnected"}
@@ -1464,12 +1666,14 @@ const Home = () => {
               <Typography 
                 variant="body2" 
                 sx={{ 
-                  color: "#34623f",
-                  fontWeight: 500,
-                  px: 2,
-                  py: 0.5,
-                  backgroundColor: "rgba(255,255,255,0.8)",
-                  borderRadius: 1,
+                  color: "#465C88",
+                  fontWeight: 600,
+                  px: 3,
+                  py: 1,
+                  backgroundColor: "#FFFFFF",
+                  borderRadius: 3,
+                  border: "1px solid #E9E3DF",
+                  boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
                 }}
               >
                 Data: Flood({floodData.length}) | Landslide({landslideData.length}) | Gas/Fire({gasFireData.length})
@@ -1479,12 +1683,14 @@ const Home = () => {
                 <Typography 
                   variant="body2" 
                   sx={{ 
-                    color: "#cc4a02",
-                    fontWeight: 500,
-                    px: 2,
-                    py: 0.5,
-                    backgroundColor: "rgba(255,255,255,0.8)",
-                    borderRadius: 1,
+                    color: "#FF7A30",
+                    fontWeight: 600,
+                    px: 3,
+                    py: 1,
+                    backgroundColor: "#FFFFFF",
+                    borderRadius: 3,
+                    border: "1px solid #E9E3DF",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
                   }}
                 >
                   Loading...
@@ -1495,12 +1701,14 @@ const Home = () => {
                 <Typography 
                   variant="body2" 
                   sx={{ 
-                    color: "#DC143C",
-                    fontWeight: 500,
-                    px: 2,
-                    py: 0.5,
-                    backgroundColor: "rgba(255,255,255,0.8)",
-                    borderRadius: 1,
+                    color: "#F44336",
+                    fontWeight: 600,
+                    px: 3,
+                    py: 1,
+                    backgroundColor: "#FFFFFF",
+                    borderRadius: 3,
+                    border: "1px solid #E9E3DF",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
                   }}
                 >
                   Error: {error}
@@ -1509,20 +1717,32 @@ const Home = () => {
             </Box>
             
             {/* Charts Grid */}
-            <Grid container spacing={isExpanded ? 4 : 3}>
+            <Grid container spacing={isExpanded ? 4 : 3} justifyContent="center">
               {/* Flood Chart */}
               <Grid item xs={12} lg={6}>
                 <Paper 
                   sx={{ 
-                    p: 3, 
-                    height: isExpanded ? 500 : 400,
-                    backgroundColor: '#ffffff',
-                    border: '3px solid #1F51FF',
-                    borderRadius: 2,
-                    transition: "all 0.3s ease",
+                    p: 4, 
+                    height: isExpanded ? 520 : 420,
+                    background: "linear-gradient(135deg, #FFFFFF 0%, #F8FFFE 100%)",
+                    border: '2px solid #4FC3F720',
+                    borderRadius: 4,
+                    transition: "all 0.4s ease",
+                    overflow: "hidden",
+                    position: "relative",
                     '&:hover': {
-                      transform: 'translateY(-5px)',
-                      boxShadow: '0 8px 25px rgba(31, 81, 255, 0.2)',
+                      transform: 'translateY(-8px)',
+                      boxShadow: '0 20px 40px rgba(79, 195, 247, 0.2)',
+                      border: '2px solid #4FC3F750',
+                    },
+                    '&::before': {
+                      content: '""',
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: 4,
+                      background: 'linear-gradient(90deg, #4FC3F7, #03A9F4)',
                     },
                     '@media print': {
                       breakInside: 'avoid',
@@ -1530,11 +1750,33 @@ const Home = () => {
                     }
                   }}
                 >
-                  <Typography variant="h6" sx={{ mb: 2, color: '#34623f', fontWeight: 600, fontSize: { xs: "1rem", md: "1.1rem" } }}>
-                    💧 Flood Monitoring ({floodData.length > 0 ? `${floodData.length} data points` : 'No data'})
-                  </Typography>
+                  <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
+                    <Box
+                      sx={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: "50%",
+                        background: "linear-gradient(135deg, #4FC3F7, #03A9F4)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "#FFFFFF",
+                        mr: 2,
+                      }}
+                    >
+                      💧
+                    </Box>
+                    <Box>
+                      <Typography variant="h5" sx={{ color: '#4FC3F7', fontWeight: 700, fontSize: { xs: "1.2rem", md: "1.4rem" } }}>
+                        Flood Monitoring
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: '#465C88', fontWeight: 500 }}>
+                        {floodData.length > 0 ? `${floodData.length} data points` : 'No data'}
+                      </Typography>
+                    </Box>
+                  </Box>
                   
-                  <Box sx={{ height: isExpanded ? 400 : 300 }}>
+                  <Box sx={{ height: isExpanded ? 420 : 320 }}>
                     {floodData.length > 0 ? (
                       <Line data={prepareFloodChartData()} options={floodChartOptions} />
                     ) : (
@@ -1544,7 +1786,7 @@ const Home = () => {
                           alignItems: 'center', 
                           justifyContent: 'center', 
                           height: '100%',
-                          color: '#34623f',
+                          color: '#4FC3F7',
                           fontSize: '1.2rem',
                           fontWeight: 500
                         }}
@@ -1560,15 +1802,27 @@ const Home = () => {
               <Grid item xs={12} lg={6}>
                 <Paper 
                   sx={{ 
-                    p: 3, 
-                    height: isExpanded ? 500 : 400,
-                    backgroundColor: '#ffffff',
-                    border: '3px solid #DC143C',
-                    borderRadius: 2,
-                    transition: "all 0.3s ease",
+                    p: 4, 
+                    height: isExpanded ? 520 : 420,
+                    background: "linear-gradient(135deg, #FFFFFF 0%, #FFFEF8 100%)",
+                    border: '2px solid #FF9F4020',
+                    borderRadius: 4,
+                    transition: "all 0.4s ease",
+                    overflow: "hidden",
+                    position: "relative",
                     '&:hover': {
-                      transform: 'translateY(-5px)',
-                      boxShadow: '0 8px 25px rgba(220, 20, 60, 0.2)',
+                      transform: 'translateY(-8px)',
+                      boxShadow: '0 20px 40px rgba(255, 159, 64, 0.2)',
+                      border: '2px solid #FF9F4050',
+                    },
+                    '&::before': {
+                      content: '""',
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: 4,
+                      background: 'linear-gradient(90deg, #FF9F40, #FF7A30)',
                     },
                     '@media print': {
                       breakInside: 'avoid',
@@ -1576,11 +1830,33 @@ const Home = () => {
                     }
                   }}
                 >
-                  <Typography variant="h6" sx={{ mb: 2, color: '#34623f', fontWeight: 600, fontSize: { xs: "1rem", md: "1.1rem" } }}>
-                    🏔️ Landslide Monitoring ({landslideData.length > 0 ? `${landslideData.length} data points` : 'No data'})
-                  </Typography>
+                  <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
+                    <Box
+                      sx={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: "50%",
+                        background: "linear-gradient(135deg, #FF9F40, #FF7A30)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "#FFFFFF",
+                        mr: 2,
+                      }}
+                    >
+                      🏔️
+                    </Box>
+                    <Box>
+                      <Typography variant="h5" sx={{ color: '#FF9F40', fontWeight: 700, fontSize: { xs: "1.2rem", md: "1.4rem" } }}>
+                        Landslide Monitoring
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: '#465C88', fontWeight: 500 }}>
+                        {landslideData.length > 0 ? `${landslideData.length} data points` : 'No data'}
+                      </Typography>
+                    </Box>
+                  </Box>
                   
-                  <Box sx={{ height: isExpanded ? 400 : 300 }}>
+                  <Box sx={{ height: isExpanded ? 420 : 320 }}>
                     {landslideData.length > 0 ? (
                       <Line data={prepareLandslideChartData()} options={landslideChartOptions} />
                     ) : (
@@ -1590,7 +1866,7 @@ const Home = () => {
                           alignItems: 'center', 
                           justifyContent: 'center', 
                           height: '100%',
-                          color: '#34623f',
+                          color: '#FF9F40',
                           fontSize: '1.2rem',
                           fontWeight: 500
                         }}
@@ -1602,18 +1878,31 @@ const Home = () => {
                 </Paper>
               </Grid>
             {/* Gas/Fire Chart */}
-              <Grid item xs={12} lg={4}>
+              <Grid item xs={12} lg={8}>
                 <Paper 
                   sx={{ 
-                    p: 3, 
-                    height: isExpanded ? 500 : 400,
-                    backgroundColor: '#ffffff',
-                    border: '3px solid #FF6384',
-                    borderRadius: 2,
-                    transition: "all 0.3s ease",
+                    p: 4, 
+                    height: isExpanded ? 520 : 420,
+                    background: "linear-gradient(135deg, #FFFFFF 0%, #FFF8F8 100%)",
+                    border: '2px solid #FF526520',
+                    borderRadius: 4,
+                    transition: "all 0.4s ease",
+                    overflow: "hidden",
+                    position: "relative",
+                    mx: "auto",
                     '&:hover': {
-                      transform: 'translateY(-5px)',
-                      boxShadow: '0 8px 25px rgba(255, 99, 132, 0.2)',
+                      transform: 'translateY(-8px)',
+                      boxShadow: '0 20px 40px rgba(255, 82, 101, 0.2)',
+                      border: '2px solid #FF526550',
+                    },
+                    '&::before': {
+                      content: '""',
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: 4,
+                      background: 'linear-gradient(90deg, #FF5265, #F44336)',
                     },
                     '@media print': {
                       breakInside: 'avoid',
@@ -1621,11 +1910,33 @@ const Home = () => {
                     }
                   }}
                 >
-                  <Typography variant="h6" sx={{ mb: 2, color: '#34623f', fontWeight: 600, fontSize: { xs: "1rem", md: "1.1rem" } }}>
-                    🔥 Gas/Fire Monitoring ({gasFireData.length > 0 ? `${gasFireData.length} data points` : 'No data'})
-                  </Typography>
+                  <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
+                    <Box
+                      sx={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: "50%",
+                        background: "linear-gradient(135deg, #FF5265, #F44336)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        color: "#FFFFFF",
+                        mr: 2,
+                      }}
+                    >
+                      🔥
+                    </Box>
+                    <Box>
+                      <Typography variant="h5" sx={{ color: '#FF5265', fontWeight: 700, fontSize: { xs: "1.2rem", md: "1.4rem" } }}>
+                        Gas/Fire Monitoring
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: '#465C88', fontWeight: 500 }}>
+                        {gasFireData.length > 0 ? `${gasFireData.length} data points` : 'No data'}
+                      </Typography>
+                    </Box>
+                  </Box>
                   
-                  <Box sx={{ height: isExpanded ? 400 : 300 }}>
+                  <Box sx={{ height: isExpanded ? 420 : 320 }}>
                     {gasFireData.length > 0 ? (
                       <Line data={prepareGasFireChartData()} options={gasFireChartOptions} />
                     ) : (
@@ -1635,7 +1946,7 @@ const Home = () => {
                           alignItems: 'center', 
                           justifyContent: 'center', 
                           height: '100%',
-                          color: '#34623f',
+                          color: '#FF5265',
                           fontSize: '1.2rem',
                           fontWeight: 500
                         }}
@@ -1648,11 +1959,13 @@ const Home = () => {
               </Grid>
             </Grid>
           </Box>
+        </Box>
 
           
 
           {/* Notifications Section */}
-          <Box sx={{ width: "100%", maxWidth: 800, px: { xs: 1, md: 0 } }}>
+          <Box sx={{ display: "flex", justifyContent: "center" }}>
+            <Box sx={{ width: "100%", maxWidth: 900, px: { xs: 1, md: 0 } }}>
             <Typography
               variant="h5"
               sx={{ 
@@ -1720,6 +2033,7 @@ const Home = () => {
               ))}
             </Box>
           </Box>
+        </Box>
         </Container>
       </Box>
 
