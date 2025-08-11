@@ -1845,7 +1845,7 @@ const Home = () => {
         BackdropComponent={Backdrop}
         BackdropProps={{
           timeout: 500,
-          sx: { backgroundColor: 'rgba(0, 0, 0, 0.9)' }
+          sx: { backgroundColor: 'rgba(0, 0, 0, 0.95)' }
         }}
       >
         <Box
@@ -1855,8 +1855,8 @@ const Home = () => {
             left: 0,
             width: '100vw',
             height: '100vh',
-            backgroundColor: '#F5F5DD',
-            p: 4,
+            background: "linear-gradient(135deg, #E9E3DF 0%, #F5F0EC 100%)",
+            p: { xs: 2, md: 4 },
             overflow: 'auto',
             outline: 'none',
           }}
@@ -1866,143 +1866,392 @@ const Home = () => {
             display: "flex", 
             alignItems: "center", 
             justifyContent: "space-between", 
-            mb: 4,
+            mb: { xs: 3, md: 4 },
+            background: "linear-gradient(135deg, #FFFFFF 0%, #F8F8F8 100%)",
+            p: 3,
+            borderRadius: 3,
+            boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)",
           }}>
             <Box sx={{ display: "flex", alignItems: "center" }}>
-              <BarChart sx={{ fontSize: 40, mr: 2, color: "#cc4a02" }} />
-              <Typography
-                variant="h3"
-                sx={{ 
-                  color: "#34623f",
-                  fontWeight: 600,
+              <Box
+                sx={{
+                  width: 50,
+                  height: 50,
+                  borderRadius: "50%",
+                  background: "linear-gradient(135deg, #FF7A30, #465C88)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  mr: 3,
+                  boxShadow: "0 4px 16px rgba(255, 122, 48, 0.3)",
                 }}
               >
-                RESCPI Real-time Monitoring Dashboard
-              </Typography>
+                <BarChart sx={{ fontSize: 28, color: "#FFFFFF" }} />
+              </Box>
+              <Box>
+                <Typography
+                  variant="h3"
+                  sx={{ 
+                    background: "linear-gradient(135deg, #FF7A30 0%, #465C88 100%)",
+                    backgroundClip: "text",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    fontWeight: 700,
+                    fontSize: { xs: "1.8rem", md: "2.5rem" },
+                    lineHeight: 1.2,
+                  }}
+                >
+                  RESCPI Dashboard
+                </Typography>
+                <Typography
+                  variant="h6"
+                  sx={{ 
+                    color: "#465C88",
+                    fontWeight: 500,
+                    fontSize: { xs: "1rem", md: "1.2rem" },
+                  }}
+                >
+                  Real-time Emergency Monitoring
+                </Typography>
+              </Box>
             </Box>
             
-            <IconButton 
-              onClick={toggleFullScreen}
-              sx={{ 
-                color: "#34623f",
-                border: "2px solid #34623f",
-                fontSize: "2rem",
-                "&:hover": {
-                  backgroundColor: "rgba(52, 98, 63, 0.1)",
-                }
-              }}
-            >
-              <Close />
-            </IconButton>
+            <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+              <Tooltip title="Refresh All Data">
+                <IconButton 
+                  onClick={handleRefreshData}
+                  disabled={loading}
+                  sx={{ 
+                    color: "#FF7A30",
+                    border: "2px solid #FF7A30",
+                    width: 48,
+                    height: 48,
+                    "&:hover": {
+                      backgroundColor: "rgba(255, 122, 48, 0.1)",
+                      transform: "scale(1.05)",
+                    },
+                    "&:disabled": {
+                      opacity: 0.5,
+                    }
+                  }}
+                >
+                  <Refresh />
+                </IconButton>
+              </Tooltip>
+              
+              <IconButton 
+                onClick={toggleFullScreen}
+                sx={{ 
+                  color: "#465C88",
+                  border: "2px solid #465C88",
+                  width: 48,
+                  height: 48,
+                  "&:hover": {
+                    backgroundColor: "rgba(70, 92, 136, 0.1)",
+                    transform: "scale(1.05)",
+                  }
+                }}
+              >
+                <Close />
+              </IconButton>
+            </Box>
           </Box>
           
-          {/* Full Screen Charts */}
-          <Grid container spacing={4} sx={{ height: 'calc(100vh - 200px)' }}>
-            <Grid item xs={12} md={6}>
-              <Paper 
-                sx={{ 
-                  p: 4, 
-                  height: '100%',
-                  backgroundColor: '#ffffff',
-                  border: '3px solid #1F51FF',
-                  borderRadius: 2,
-                }}
-              >
-                <Typography variant="h5" sx={{ mb: 3, color: '#34623f', fontWeight: 600 }}>
-                  💧 Flood Monitoring - Full Screen
-                </Typography>
-                <Box sx={{ height: 'calc(100% - 80px)' }}>
-                  {floodData.length > 0 ? (
-                    <Line data={prepareFloodChartData()} options={floodChartOptions} />
-                  ) : (
-                    <Box 
-                      sx={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        justifyContent: 'center', 
-                        height: '100%',
-                        color: '#34623f',
-                        fontSize: '2rem',
-                        fontWeight: 500
-                      }}
-                    >
-                      No flood data available
+          {/* Full Screen Charts Grid - All 3 containers in a single row */}
+          <Container maxWidth={false} sx={{ px: 0 }}>
+            <Grid container spacing={{ xs: 2, md: 3 }} justifyContent="center">
+              {/* Flood Monitoring */}
+              <Grid item xs={12} lg={4}>
+                <Paper 
+                  elevation={0}
+                  sx={{ 
+                    p: { xs: 3, md: 4 }, 
+                    height: { xs: 500, md: 600 },
+                    background: "linear-gradient(135deg, #FFFFFF 0%, #F8FFFE 100%)",
+                    border: '2px solid rgba(79, 195, 247, 0.3)',
+                    borderRadius: 4,
+                    transition: "all 0.3s ease",
+                    position: "relative",
+                    overflow: "hidden",
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: '0 16px 40px rgba(79, 195, 247, 0.2)',
+                      border: '2px solid rgba(79, 195, 247, 0.5)',
+                    },
+                    '&::before': {
+                      content: '""',
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: 4,
+                      background: 'linear-gradient(90deg, #4FC3F7, #03A9F4)',
+                    },
+                  }}
+                >
+                  <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 3 }}>
+                    <Box sx={{ display: "flex", alignItems: "center" }}>
+                      <Box
+                        sx={{
+                          width: 44,
+                          height: 44,
+                          borderRadius: "50%",
+                          background: "linear-gradient(135deg, #4FC3F7, #03A9F4)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          color: "#FFFFFF",
+                          mr: 2,
+                          fontSize: "1.5rem",
+                        }}
+                      >
+                        💧
+                      </Box>
+                      <Box>
+                        <Typography variant="h6" sx={{ color: '#4FC3F7', fontWeight: 700, fontSize: { xs: "1.1rem", md: "1.3rem" } }}>
+                          Flood Monitoring
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: '#465C88', fontWeight: 500, fontSize: { xs: "0.8rem", md: "0.9rem" } }}>
+                          Distance & Water Volume
+                        </Typography>
+                      </Box>
                     </Box>
-                  )}
-                </Box>
-              </Paper>
-            </Grid>
-            
-            <Grid item xs={12} md={6}>
-              <Paper 
-                sx={{ 
-                  p: 4, 
-                  height: '100%',
-                  backgroundColor: '#ffffff',
-                  border: '3px solid #DC143C',
-                  borderRadius: 2,
-                }}
-              >
-                <Typography variant="h5" sx={{ mb: 3, color: '#34623f', fontWeight: 600 }}>
-                  🏔️ Landslide Monitoring - Full Screen
-                </Typography>
-                <Box sx={{ height: 'calc(100% - 80px)' }}>
-                  {landslideData.length > 0 ? (
-                    <Line data={prepareLandslideChartData()} options={landslideChartOptions} />
-                  ) : (
-                    <Box 
-                      sx={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        justifyContent: 'center', 
-                        height: '100%',
-                        color: '#34623f',
-                        fontSize: '2rem',
-                        fontWeight: 500
-                      }}
-                    >
-                      No landslide data available
+                    <Box sx={{ 
+                      bgcolor: 'rgba(79, 195, 247, 0.1)', 
+                      px: 2, 
+                      py: 1, 
+                      borderRadius: 2,
+                      border: '1px solid rgba(79, 195, 247, 0.3)'
+                    }}>
+                      <Typography variant="caption" sx={{ color: '#4FC3F7', fontWeight: 600 }}>
+                        {floodData.length} Records
+                      </Typography>
                     </Box>
-                  )}
-                </Box>
-              </Paper>
-            </Grid>
+                  </Box>
+                  
+                  <Box sx={{ height: 'calc(100% - 100px)' }}>
+                    {floodData.length > 0 ? (
+                      <Line data={prepareFloodChartData()} options={floodChartOptions} />
+                    ) : (
+                      <Box 
+                        sx={{ 
+                          display: 'flex', 
+                          flexDirection: 'column',
+                          alignItems: 'center', 
+                          justifyContent: 'center', 
+                          height: '100%',
+                          color: '#4FC3F7',
+                          textAlign: 'center'
+                        }}
+                      >
+                        <Box sx={{ fontSize: '4rem', mb: 2, opacity: 0.5 }}>💧</Box>
+                        <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+                          {loading ? 'Loading Data...' : error ? 'Connection Error' : 'No Data Available'}
+                        </Typography>
+                        <Typography variant="body2" sx={{ opacity: 0.7 }}>
+                          {error ? `${error}` : 'Waiting for flood sensor data'}
+                        </Typography>
+                      </Box>
+                    )}
+                  </Box>
+                </Paper>
+              </Grid>
+              
+              {/* Landslide Monitoring */}
+              <Grid item xs={12} lg={4}>
+                <Paper 
+                  elevation={0}
+                  sx={{ 
+                    p: { xs: 3, md: 4 }, 
+                    height: { xs: 500, md: 600 },
+                    background: "linear-gradient(135deg, #FFFFFF 0%, #FFFEF8 100%)",
+                    border: '2px solid rgba(255, 159, 64, 0.3)',
+                    borderRadius: 4,
+                    transition: "all 0.3s ease",
+                    position: "relative",
+                    overflow: "hidden",
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: '0 16px 40px rgba(255, 159, 64, 0.2)',
+                      border: '2px solid rgba(255, 159, 64, 0.5)',
+                    },
+                    '&::before': {
+                      content: '""',
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: 4,
+                      background: 'linear-gradient(90deg, #FF9F40, #FF7A30)',
+                    },
+                  }}
+                >
+                  <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 3 }}>
+                    <Box sx={{ display: "flex", alignItems: "center" }}>
+                      <Box
+                        sx={{
+                          width: 44,
+                          height: 44,
+                          borderRadius: "50%",
+                          background: "linear-gradient(135deg, #FF9F40, #FF7A30)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          color: "#FFFFFF",
+                          mr: 2,
+                          fontSize: "1.5rem",
+                        }}
+                      >
+                        🏔️
+                      </Box>
+                      <Box>
+                        <Typography variant="h6" sx={{ color: '#FF9F40', fontWeight: 700, fontSize: { xs: "1.1rem", md: "1.3rem" } }}>
+                          Landslide Monitoring
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: '#465C88', fontWeight: 500, fontSize: { xs: "0.8rem", md: "0.9rem" } }}>
+                          Acceleration & Drop Height
+                        </Typography>
+                      </Box>
+                    </Box>
+                    <Box sx={{ 
+                      bgcolor: 'rgba(255, 159, 64, 0.1)', 
+                      px: 2, 
+                      py: 1, 
+                      borderRadius: 2,
+                      border: '1px solid rgba(255, 159, 64, 0.3)'
+                    }}>
+                      <Typography variant="caption" sx={{ color: '#FF9F40', fontWeight: 600 }}>
+                        {landslideData.length} Records
+                      </Typography>
+                    </Box>
+                  </Box>
+                  
+                  <Box sx={{ height: 'calc(100% - 100px)' }}>
+                    {landslideData.length > 0 ? (
+                      <Line data={prepareLandslideChartData()} options={landslideChartOptions} />
+                    ) : (
+                      <Box 
+                        sx={{ 
+                          display: 'flex', 
+                          flexDirection: 'column',
+                          alignItems: 'center', 
+                          justifyContent: 'center', 
+                          height: '100%',
+                          color: '#FF9F40',
+                          textAlign: 'center'
+                        }}
+                      >
+                        <Box sx={{ fontSize: '4rem', mb: 2, opacity: 0.5 }}>🏔️</Box>
+                        <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+                          Loading Sensor Data...
+                        </Typography>
+                        <Typography variant="body2" sx={{ opacity: 0.7 }}>
+                          Monitoring landslide detection systems
+                        </Typography>
+                      </Box>
+                    )}
+                  </Box>
+                </Paper>
+              </Grid>
 
-          <Grid item xs={12} md={4}>
-              <Paper 
-                sx={{ 
-                  p: 4, 
-                  height: '100%',
-                  backgroundColor: '#ffffff',
-                  border: '3px solid #FF6384',
-                  borderRadius: 2,
-                }}
-              >
-                <Typography variant="h5" sx={{ mb: 3, color: '#34623f', fontWeight: 600 }}>
-                  🔥 Gas/Fire Monitoring - Full Screen
-                </Typography>
-                <Box sx={{ height: 'calc(100% - 80px)' }}>
-                  {gasFireData.length > 0 ? (
-                    <Line data={prepareGasFireChartData()} options={gasFireChartOptions} />
-                  ) : (
-                    <Box 
-                      sx={{ 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        justifyContent: 'center', 
-                        height: '100%',
-                        color: '#34623f',
-                        fontSize: '2rem',
-                        fontWeight: 500
-                      }}
-                    >
-                      No gas/fire data available
+              {/* Gas/Fire Monitoring */}
+              <Grid item xs={12} lg={4}>
+                <Paper 
+                  elevation={0}
+                  sx={{ 
+                    p: { xs: 3, md: 4 }, 
+                    height: { xs: 500, md: 600 },
+                    background: "linear-gradient(135deg, #FFFFFF 0%, #FFF8F8 100%)",
+                    border: '2px solid rgba(255, 82, 101, 0.3)',
+                    borderRadius: 4,
+                    transition: "all 0.3s ease",
+                    position: "relative",
+                    overflow: "hidden",
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: '0 16px 40px rgba(255, 82, 101, 0.2)',
+                      border: '2px solid rgba(255, 82, 101, 0.5)',
+                    },
+                    '&::before': {
+                      content: '""',
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: 4,
+                      background: 'linear-gradient(90deg, #FF5265, #F44336)',
+                    },
+                  }}
+                >
+                  <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 3 }}>
+                    <Box sx={{ display: "flex", alignItems: "center" }}>
+                      <Box
+                        sx={{
+                          width: 44,
+                          height: 44,
+                          borderRadius: "50%",
+                          background: "linear-gradient(135deg, #FF5265, #F44336)",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          color: "#FFFFFF",
+                          mr: 2,
+                          fontSize: "1.5rem",
+                        }}
+                      >
+                        🔥
+                      </Box>
+                      <Box>
+                        <Typography variant="h6" sx={{ color: '#FF5265', fontWeight: 700, fontSize: { xs: "1.1rem", md: "1.3rem" } }}>
+                          Gas & Fire Detection
+                        </Typography>
+                        <Typography variant="body2" sx={{ color: '#465C88', fontWeight: 500, fontSize: { xs: "0.8rem", md: "0.9rem" } }}>
+                          MQ2, CO & Flame Detection
+                        </Typography>
+                      </Box>
                     </Box>
-                  )}
-                </Box>
-              </Paper>
+                    <Box sx={{ 
+                      bgcolor: 'rgba(255, 82, 101, 0.1)', 
+                      px: 2, 
+                      py: 1, 
+                      borderRadius: 2,
+                      border: '1px solid rgba(255, 82, 101, 0.3)'
+                    }}>
+                      <Typography variant="caption" sx={{ color: '#FF5265', fontWeight: 600 }}>
+                        {gasFireData.length} Records
+                      </Typography>
+                    </Box>
+                  </Box>
+                  
+                  <Box sx={{ height: 'calc(100% - 100px)' }}>
+                    {gasFireData.length > 0 ? (
+                      <Line data={prepareGasFireChartData()} options={gasFireChartOptions} />
+                    ) : (
+                      <Box 
+                        sx={{ 
+                          display: 'flex', 
+                          flexDirection: 'column',
+                          alignItems: 'center', 
+                          justifyContent: 'center', 
+                          height: '100%',
+                          color: '#FF5265',
+                          textAlign: 'center'
+                        }}
+                      >
+                        <Box sx={{ fontSize: '4rem', mb: 2, opacity: 0.5 }}>🔥</Box>
+                        <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+                          Loading Gas/Fire Data...
+                        </Typography>
+                        <Typography variant="body2" sx={{ opacity: 0.7 }}>
+                          Monitoring gas levels and fire detection sensors
+                        </Typography>
+                      </Box>
+                    )}
+                  </Box>
+                </Paper>
+              </Grid>
             </Grid>
-          </Grid>
+          </Container>
         </Box>
       </Modal>
     </ThemeProvider>
