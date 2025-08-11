@@ -46,25 +46,90 @@ const LANDSLIDE_DETECTION = {
   RESCUE_COOLDOWN: 30000,            // 30 seconds between auto-activations
 };
 
-// Custom theme with new colors
+// Modern theme with RESCPI color scheme (E9E3DF, FF7A30, 465C88, 000000) and Poppins font
 const landslideTheme = createTheme({
+  typography: {
+    fontFamily: [
+      'Poppins',
+      '-apple-system',
+      'BlinkMacSystemFont',
+      '"Segoe UI"',
+      'Roboto',
+      '"Helvetica Neue"',
+      'Arial',
+      'sans-serif',
+    ].join(','),
+    h1: { fontWeight: 700, color: '#000000' },
+    h2: { fontWeight: 600, color: '#000000' },
+    h3: { fontWeight: 600, color: '#000000' },
+    h4: { fontWeight: 600, color: '#000000' },
+    h5: { fontWeight: 500, color: '#000000' },
+    h6: { fontWeight: 500, color: '#000000' },
+    body1: { fontWeight: 400, color: '#000000' },
+    body2: { fontWeight: 400, color: '#465C88' },
+    button: { fontWeight: 600, textTransform: 'none' },
+  },
   palette: {
     primary: {
-      main: '#cc4a02',
+      main: '#FF7A30',
     },
     secondary: {
-      main: '#66FF00',
+      main: '#465C88',
     },
     background: {
-      default: '#F5F5DD',
+      default: '#E9E3DF',
       paper: '#ffffff',
     },
     text: {
-      primary: '#34623f',
-      secondary: '#666666',
+      primary: '#000000',
+      secondary: '#465C88',
+    },
+    error: {
+      main: '#DC143C',
+    },
+    warning: {
+      main: '#FF7A30',
     },
     info: {
-      main: '#1F51FF',
+      main: '#465C88',
+    },
+    success: {
+      main: '#4caf50',
+    },
+  },
+  components: {
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          borderRadius: 16,
+          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
+          border: '1px solid rgba(255, 122, 48, 0.1)',
+        },
+      },
+    },
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          borderRadius: 12,
+          textTransform: 'none',
+          fontWeight: 600,
+          padding: '12px 24px',
+        },
+        contained: {
+          boxShadow: '0 4px 16px rgba(255, 122, 48, 0.3)',
+          '&:hover': {
+            boxShadow: '0 6px 20px rgba(255, 122, 48, 0.4)',
+          },
+        },
+      },
+    },
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          borderRadius: 16,
+          border: '1px solid rgba(255, 122, 48, 0.1)',
+        },
+      },
     },
   },
 });
@@ -567,51 +632,110 @@ const LandslideDashboard = () => {
 
   return (
     <ThemeProvider theme={landslideTheme}>
-      <Box
-        sx={{
-          height: '100vh',
-          width: '100vw',
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          overflow: 'auto',
-          background: 'linear-gradient(135deg, #F5F5DD 0%, #f0f4f0 50%, #e8f2e8 100%)',
-          py: 2,
+      {/* Import Poppins Font */}
+      <link
+        rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap"
+      />
+      <Container 
+        maxWidth={false} 
+        disableGutters
+        sx={{ 
+          width: '100%', 
+          minHeight: '100vh',
+          background: 'linear-gradient(135deg, #E9E3DF 0%, #F5F0EC 50%, #F0EBE7 100%)',
+          py: 4,
+          px: 4,
+          display: 'flex', 
+          flexDirection: 'column', 
+          alignItems: 'center',
+          position: 'relative',
+          '&::before': {
+            content: '""',
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: `
+              radial-gradient(circle at 20% 20%, rgba(255, 122, 48, 0.05) 0%, transparent 50%),
+              radial-gradient(circle at 80% 80%, rgba(70, 92, 136, 0.05) 0%, transparent 50%),
+              radial-gradient(circle at 50% 50%, rgba(0, 0, 0, 0.02) 0%, transparent 50%)
+            `,
+            zIndex: -1,
+          },
         }}
       >
-        <Container maxWidth="xl" sx={{ height: '100%' }}>
           {/* Header with Connection Status */}
-          <Box display="flex" alignItems="center" justifyContent="space-between" mb={3}>
-            <Box display="flex" alignItems="center">
+          <Box display="flex" alignItems="center" justifyContent="center" mb={4} sx={{ width: '100%' }}>
+            <Box display="flex" alignItems="center" justifyContent="space-between" sx={{ width: '100%' }}>
               <Button
                 startIcon={<ArrowBack />}
                 onClick={() => navigate('/')}
                 sx={{ 
-                  color: '#cc4a02', 
-                  mr: 2,
+                  color: '#FF7A30', 
+                  fontSize: '1rem',
+                  fontWeight: 600,
                   '&:hover': {
-                    backgroundColor: 'rgba(204, 74, 2, 0.1)',
-                  }
+                    backgroundColor: 'rgba(255, 122, 48, 0.1)',
+                    transform: 'translateX(-2px)',
+                  },
+                  transition: 'all 0.3s ease',
                 }}
               >
                 Back to Home
               </Button>
-              <Landslide sx={{ fontSize: 40, mr: 2, color: '#cc4a02' }} />
-              <Typography variant="h4" component="h1" sx={{ color: '#34623f', fontWeight: 600 }}>
-                Landslide Emergency Dashboard
-              </Typography>
-            </Box>
+              
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  background: 'linear-gradient(135deg, rgba(255, 122, 48, 0.1) 0%, rgba(70, 92, 136, 0.1) 100%)',
+                  borderRadius: 3,
+                  px: 4,
+                  py: 2,
+                  border: '2px solid rgba(255, 122, 48, 0.2)',
+                  mx: 4,
+                  flex: 1,
+                  justifyContent: 'center',
+                }}
+              >
+                <Landslide sx={{ fontSize: 48, mr: 2, color: '#FF7A30' }} />
+                <Typography variant="h4" component="h1" sx={{ color: '#000000', fontWeight: 700 }}>
+                  Landslide Emergency Dashboard
+                </Typography>
+              </Box>
             
-            {/* Connection Status */}
-            <Box display="flex" alignItems="center" gap={1}>
-              {wsConnected ? (
-                <Wifi sx={{ color: 'green' }} />
-              ) : (
-                <WifiOff sx={{ color: 'red' }} />
-              )}
-              <Typography variant="body2" color={wsConnected ? 'success.main' : 'error.main'}>
-                {connectionStatus}
-              </Typography>
+              {/* Connection Status */}
+              <Box 
+                display="flex" 
+                alignItems="center" 
+                gap={2}
+                sx={{
+                  background: wsConnected 
+                    ? 'linear-gradient(135deg, rgba(76, 175, 80, 0.1) 0%, rgba(76, 175, 80, 0.2) 100%)'
+                    : 'linear-gradient(135deg, rgba(220, 20, 60, 0.1) 0%, rgba(220, 20, 60, 0.2) 100%)',
+                  borderRadius: 3,
+                  px: 3,
+                  py: 1.5,
+                  border: `2px solid ${wsConnected ? 'rgba(76, 175, 80, 0.3)' : 'rgba(220, 20, 60, 0.3)'}`,
+                }}
+              >
+                {wsConnected ? (
+                  <Wifi sx={{ color: '#4caf50', fontSize: 28 }} />
+                ) : (
+                  <WifiOff sx={{ color: '#DC143C', fontSize: 28 }} />
+                )}
+                <Typography 
+                  variant="body1" 
+                  sx={{ 
+                    color: wsConnected ? '#4caf50' : '#DC143C',
+                    fontWeight: 600,
+                  }}
+                >
+                  {connectionStatus}
+                </Typography>
+              </Box>
             </Box>
           </Box>
 
@@ -620,11 +744,14 @@ const LandslideDashboard = () => {
             <Alert 
               severity="error" 
               sx={{ 
-                mb: 2,
-                backgroundColor: 'rgba(220, 20, 60, 0.9)',
+                mb: 3,
+                width: '100%',
+                background: 'linear-gradient(135deg, rgba(220, 20, 60, 0.9) 0%, rgba(185, 18, 48, 0.9) 100%)',
                 color: 'white',
                 fontSize: '1.2rem',
                 fontWeight: 'bold',
+                borderRadius: 2,
+                border: '1px solid rgba(255, 255, 255, 0.2)',
                 animation: 'pulse 1s infinite'
               }}
               icon={<Emergency sx={{ color: 'white' }} />}
@@ -638,11 +765,14 @@ const LandslideDashboard = () => {
             <Alert 
               severity="warning" 
               sx={{ 
-                mb: 2,
-                backgroundColor: 'rgba(255, 140, 0, 0.9)',
+                mb: 3,
+                width: '100%',
+                background: 'linear-gradient(135deg, rgba(255, 122, 48, 0.9) 0%, rgba(230, 90, 0, 0.9) 100%)',
                 color: 'white',
                 fontSize: '1.1rem',
-                fontWeight: 'bold'
+                fontWeight: 'bold',
+                borderRadius: 2,
+                border: '1px solid rgba(255, 255, 255, 0.2)',
               }}
               icon={<DirectionsCar sx={{ color: 'white' }} />}
             >
@@ -655,11 +785,14 @@ const LandslideDashboard = () => {
             <Alert 
               severity="info" 
               sx={{ 
-                mb: 2,
-                backgroundColor: 'rgba(31, 81, 255, 0.9)',
+                mb: 3,
+                width: '100%',
+                background: 'linear-gradient(135deg, rgba(70, 92, 136, 0.9) 0%, rgba(54, 70, 112, 0.9) 100%)',
                 color: 'white',
                 fontSize: '1.0rem',
-                fontWeight: 'bold'
+                fontWeight: 'bold',
+                borderRadius: 2,
+                border: '1px solid rgba(255, 255, 255, 0.2)',
               }}
               action={
                 <Button 
@@ -676,17 +809,30 @@ const LandslideDashboard = () => {
             </Alert>
           )}
 
-          <Grid container spacing={2} sx={{ height: 'calc(100vh - 120px)' }}>
-            {/* Control Panel */}
-            <Grid item xs={12} md={6}>
-              <Paper sx={{ p: 3, height: '100%', backgroundColor: '#ffffff', border: '2px solid #cc4a02' }}>
-                <Typography variant="h6" sx={{ mb: 3, color: '#34623f', fontWeight: 600 }}>
+          <Box sx={{ width: '100%', maxWidth: '2200px', mx: 'auto' }}>
+            <Grid container spacing={3} justifyContent="center" alignItems="flex-start" sx={{ width: '100%' }}>
+              {/* Control Panel */}
+              <Grid item xs={12} md={6} lg={5} sx={{ display: 'flex', justifyContent: 'center' }}>
+                <Paper 
+                  sx={{ 
+                    p: 4, 
+                    backgroundColor: '#ffffff',
+                    border: '2px solid #FF7A30',
+                    borderRadius: 3,
+                    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.1)',
+                    minHeight: '500px',
+                    height: 'fit-content',
+                    width: '100%',
+                    maxWidth: '600px',
+                  }}
+                >
+                <Typography variant="h5" sx={{ mb: 4, color: '#000000', fontWeight: 600, textAlign: 'center' }}>
                   Landslide Control Panel
                   {/* 🚨 AUTO-RESCUE STATUS INDICATOR */}
                   {landslideDetected && !autoRescueCompleted && (
                     <Chip 
                       label="LANDSLIDE DETECTED" 
-                      size="small" 
+                      size="medium" 
                       sx={{ 
                         ml: 2, 
                         backgroundColor: '#DC143C', 
@@ -701,10 +847,10 @@ const LandslideDashboard = () => {
                   {autoRescueCompleted && (
                     <Chip 
                       label="AUTO-RESCUE COMPLETED" 
-                      size="small" 
+                      size="medium" 
                       sx={{ 
                         ml: 2, 
-                        backgroundColor: '#1F51FF', 
+                        backgroundColor: '#465C88', 
                         color: 'white',
                         fontWeight: 'bold'
                       }}
@@ -714,14 +860,16 @@ const LandslideDashboard = () => {
                 </Typography>
 
                 {/* 🔥 Enhanced Status Alert with Feet Data and Auto-Rescue Info */}
-                <Box mb={3}>
+                <Box mb={4}>
                   {getStatusLevel() === 'critical' ? (
                     <Alert 
                       severity="error" 
                       sx={{ 
                         backgroundColor: 'rgba(220, 20, 60, 0.1)',
-                        border: '1px solid #DC143C',
-                        color: '#34623f',
+                        border: '2px solid #DC143C',
+                        borderRadius: 2,
+                        fontSize: '1rem',
+                        py: 2,
                       }}
                     >
                       🚨 CRITICAL: Both servos OFF! Landslide detected - Drop: {currentDropFt.toFixed(2)} ft
@@ -733,9 +881,11 @@ const LandslideDashboard = () => {
                     <Alert 
                       severity="warning" 
                       sx={{ 
-                        backgroundColor: 'rgba(204, 74, 2, 0.1)',
-                        border: '1px solid #cc4a02',
-                        color: '#34623f',
+                        backgroundColor: 'rgba(255, 122, 48, 0.1)',
+                        border: '2px solid #FF7A30',
+                        borderRadius: 2,
+                        fontSize: '1rem',
+                        py: 2,
                       }}
                     >
                       ⚠️ WARNING: Servo offline, movement detected - Drop: {currentDropFt.toFixed(2)} ft
@@ -745,8 +895,10 @@ const LandslideDashboard = () => {
                       severity="warning" 
                       sx={{ 
                         backgroundColor: 'rgba(255, 140, 0, 0.1)',
-                        border: '1px solid #FF8C00',
-                        color: '#34623f',
+                        border: '2px solid #FF8C00',
+                        borderRadius: 2,
+                        fontSize: '1rem',
+                        py: 2,
                       }}
                     >
                       🟡 ALERT: Significant ground movement - Drop: {currentDropFt.toFixed(2)} ft
@@ -755,31 +907,35 @@ const LandslideDashboard = () => {
                     <Alert 
                       severity="success"
                       sx={{ 
-                        backgroundColor: 'rgba(102, 255, 0, 0.1)',
-                        border: '1px solid #66FF00',
-                        color: '#34623f',
+                        backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                        border: '2px solid #4caf50',
+                        borderRadius: 2,
+                        fontSize: '1rem',
+                        alignItems: 'center',
+                        py: 2,
+                        textAlign: 'center',
                       }}
                     >
                       ✅ NORMAL: System stable - Drop: {currentDropFt.toFixed(2)} ft
                       <br />
-                      🤖 Auto-rescue monitoring active - Threshold: {LANDSLIDE_DETECTION.CRITICAL_DROP_THRESHOLD} ft
+                       Auto-rescue monitoring active - Threshold: {LANDSLIDE_DETECTION.CRITICAL_DROP_THRESHOLD} ft
                       {autoRescueCompleted && <span> | ⚠️ Auto-rescue completed</span>}
                     </Alert>
                   )}
                 </Box>
 
                 {/* 🚨 AUTO-RESCUE STATUS CARD */}
-                <Card sx={{ mb: 3, backgroundColor: '#FFF8DC', border: '2px solid #FF6347' }}>
-                  <CardContent>
-                    <Typography variant="h6" sx={{ color: '#34623f', fontWeight: 600, mb: 2 }}>
-                      🤖 Auto-Rescue System Status (ONE-TIME)
+                <Card sx={{ mb: 4, backgroundColor: '#fff3e0', border: '2px solid #FF7A30', borderRadius: 3 }}>
+                  <CardContent sx={{ p: 3 }}>
+                    <Typography variant="h6" sx={{ color: '#FF7A30', fontWeight: 600, mb: 3, textAlign: 'center' }}>
+                       Auto-Rescue System Status (ONE-TIME)
                     </Typography>
                     <Grid container spacing={2}>
                       <Grid item xs={6}>
-                        <Typography variant="body2" sx={{ color: '#34623f' }}>
+                        <Typography variant="body1" sx={{ color: '#000000', mb: 2 }}>
                           <b>Detection Threshold:</b> {LANDSLIDE_DETECTION.CRITICAL_DROP_THRESHOLD} ft
                         </Typography>
-                        <Typography variant="body2" sx={{ color: '#34623f' }}>
+                        <Typography variant="body1" sx={{ color: '#000000' }}>
                           <b>Auto-Activation:</b> {
                             autoRescueCompleted ? '✅ COMPLETED' :
                             landslideDetected ? '🔴 ARMED' : '🟢 MONITORING'
@@ -787,25 +943,41 @@ const LandslideDashboard = () => {
                         </Typography>
                       </Grid>
                       <Grid item xs={6}>
-                        <Typography variant="body2" sx={{ color: '#34623f' }}>
+                        <Typography variant="body1" sx={{ color: '#000000', mb: 2 }}>
                           <b>Last Activation:</b> {lastAutoRescueTime ? new Date(lastAutoRescueTime).toLocaleTimeString() : 'Never'}
                         </Typography>
-                        <Typography variant="body2" sx={{ color: '#34623f' }}>
+                        <Typography variant="body1" sx={{ color: '#000000' }}>
                           <b>Status:</b> {autoRescueCompleted ? '✅ ONE-TIME COMPLETE' : '🟢 READY'}
                         </Typography>
                       </Grid>
                     </Grid>
+                    
+                    <Box mt={3} p={3} sx={{ backgroundColor: '#ffebcc', borderRadius: 2, textAlign: 'center' }}>
+                      <Typography variant="body1" sx={{ color: '#FF7A30', fontWeight: 600, mb: 2 }}>
+                        🚨 Auto-Rescue Info:
+                      </Typography>
+                      <Typography variant="body2" sx={{ color: '#000000', fontSize: '0.95rem', lineHeight: 1.6 }}>
+                        • Automatically triggers when landslide is detected<br />
+                        • Posts to /rescue/landslide/on endpoint<br />
+                        • One-time activation per landslide incident<br />
+                        • Manual reset available after activation
+                      </Typography>
+                    </Box>
+
                     {/* Reset Button */}
                     {autoRescueCompleted && (
-                      <Box mt={2}>
+                      <Box mt={3} textAlign="center">
                         <Button
                           variant="outlined"
                           size="small"
                           onClick={resetAutoRescueSystem}
                           sx={{
-                            borderColor: '#1F51FF',
-                            color: '#1F51FF',
-                            '&:hover': { backgroundColor: 'rgba(31, 81, 255, 0.1)' }
+                            borderColor: '#465C88',
+                            color: '#465C88',
+                            px: 3,
+                            py: 1.5,
+                            fontSize: '1rem',
+                            '&:hover': { backgroundColor: 'rgba(70, 92, 136, 0.1)' }
                           }}
                         >
                           🔄 Reset Auto-Rescue System
@@ -816,16 +988,16 @@ const LandslideDashboard = () => {
                 </Card>
 
                 {/* 🔥 Feet Data Display */}
-                <Card sx={{ mb: 3, backgroundColor: '#F0F8FF', border: '1px solid #1F51FF' }}>
-                  <CardContent>
-                    <Typography variant="h6" sx={{ color: '#34623f', fontWeight: 600, mb: 2 }}>
-                      📏 Ground Movement Analysis
+                <Card sx={{ mb: 4, backgroundColor: '#f0f8ff', border: '2px solid #465C88', borderRadius: 3 }}>
+                  <CardContent sx={{ p: 3 }}>
+                    <Typography variant="h6" sx={{ color: '#000000', fontWeight: 600, mb: 3, textAlign: 'center' }}>
+                       Ground Movement Analysis
                     </Typography>
-                    <Grid container spacing={2}>
+                    <Grid container spacing={4}>
                       <Grid item xs={6}>
-                        <Box display="flex" alignItems="center" gap={1}>
-                          <Height sx={{ color: '#1F51FF' }} />
-                          <Typography variant="body2" sx={{ color: '#34623f' }}>
+                        <Box display="flex" alignItems="center" gap={2} mb={2}>
+                          <Height sx={{ color: '#465C88', fontSize: 28 }} />
+                          <Typography variant="body1" sx={{ color: '#000000', fontWeight: 500 }}>
                             <b>Current Drop:</b> {currentDropFt.toFixed(2)} ft
                           </Typography>
                         </Box>
@@ -833,44 +1005,56 @@ const LandslideDashboard = () => {
                           variant="determinate" 
                           value={Math.min((currentDropFt / 5) * 100, 100)} 
                           sx={{ 
-                            mt: 1, 
-                            height: 8, 
-                            borderRadius: 4,
+                            height: 12, 
+                            borderRadius: 6,
                             backgroundColor: '#e0e0e0',
                             '& .MuiLinearProgress-bar': {
-                              backgroundColor: getStatusColor(getDropSeverity(currentDropFt))
+                              backgroundColor: getStatusColor(getDropSeverity(currentDropFt)),
+                              borderRadius: 6,
                             }
                           }} 
                         />
                       </Grid>
                       <Grid item xs={6}>
-                        <Box display="flex" alignItems="center" gap={1}>
-                          <TrendingUp sx={{ color: '#cc4a02' }} />
-                          <Typography variant="body2" sx={{ color: '#34623f' }}>
+                        <Box display="flex" alignItems="center" gap={2} mb={2}>
+                          <TrendingUp sx={{ color: '#FF7A30', fontSize: 28 }} />
+                          <Typography variant="body1" sx={{ color: '#000000', fontWeight: 500 }}>
                             <b>Max Drop:</b> {maxDropFt.toFixed(2)} ft
                           </Typography>
                         </Box>
-                        <Typography variant="body2" sx={{ color: '#666666', mt: 1 }}>
+                        <Typography variant="body1" sx={{ color: '#465C88', fontWeight: 500, mt: 1 }}>
                           Sensor Height: {sensorHeight.toFixed(1)} ft
                         </Typography>
                       </Grid>
                     </Grid>
+                    <Box mt={3} p={2} sx={{ backgroundColor: 'rgba(70, 92, 136, 0.1)', borderRadius: 2, textAlign: 'center' }}>
+                      <Typography variant="body1" sx={{ color: '#465C88', fontWeight: 500 }}>
+                        Detection Threshold: {LANDSLIDE_DETECTION.CRITICAL_DROP_THRESHOLD} ft | Current Status: {getStatusLevel().toUpperCase()}
+                      </Typography>
+                    </Box>
                   </CardContent>
                 </Card>
 
                 {/* Servo Control Buttons */}
-                <Typography variant="subtitle1" sx={{ mb: 2, color: '#34623f', fontWeight: 600 }}>
+                <Typography variant="h6" sx={{ mb: 3, color: '#000000', fontWeight: 600, textAlign: 'center' }}>
                   Servo Controls
                 </Typography>
-                <Grid container spacing={2} mb={3}>
+                <Grid container spacing={3} mb={4} justifyContent="center">
                   <Grid item xs={6} sm={3}>
                     <Button
                       variant="contained"
                       fullWidth
                       sx={{
-                        backgroundColor: '#66FF00',
+                        backgroundColor: '#4caf50',
                         color: 'white',
-                        '&:hover': { backgroundColor: '#52cc00' }
+                        py: 2,
+                        fontSize: '1rem',
+                        fontWeight: 600,
+                        borderRadius: 2,
+                        '&:hover': { 
+                          backgroundColor: '#45a049',
+                        },
+                        transition: 'all 0.3s ease',
                       }}
                       startIcon={<SystemUpdateAlt />}
                       onClick={() => toggleServo(1, 'on')}
@@ -883,9 +1067,18 @@ const LandslideDashboard = () => {
                       variant="outlined"
                       fullWidth
                       sx={{
-                        borderColor: '#DC143C',
-                        color: '#DC143C',
-                        '&:hover': { backgroundColor: 'rgba(220, 20, 60, 0.1)' }
+                        borderColor: '#E43636',
+                        backgroundColor: '#E43636',
+                        color: 'white',
+                        py: 2,
+                        fontSize: '1rem',
+                        fontWeight: 600,
+                        borderRadius: 2,
+                        '&:hover': { 
+                          backgroundColor: '#c72f2fff',
+                          borderColor: '#c72f2fff',
+                        },
+                        transition: 'all 0.3s ease',
                       }}
                       startIcon={<SystemUpdateAlt />}
                       onClick={() => toggleServo(1, 'off')}
@@ -898,9 +1091,17 @@ const LandslideDashboard = () => {
                       variant="contained"
                       fullWidth
                       sx={{
-                        backgroundColor: '#1F51FF',
+                        backgroundColor: '#386641',
+                        borderColor: '#386641',
                         color: 'white',
-                        '&:hover': { backgroundColor: '#1a44d9' }
+                        py: 2,
+                        fontSize: '1rem',
+                        fontWeight: 600,
+                        borderRadius: 2,
+                        '&:hover': { 
+                          backgroundColor: '#2c5033ff',
+                        },
+                        transition: 'all 0.3s ease',
                       }}
                       startIcon={<SystemUpdateAlt />}
                       onClick={() => toggleServo(2, 'on')}
@@ -913,9 +1114,18 @@ const LandslideDashboard = () => {
                       variant="outlined"
                       fullWidth
                       sx={{
-                        borderColor: '#cc4a02',
-                        color: '#cc4a02',
-                        '&:hover': { backgroundColor: 'rgba(204, 74, 2, 0.1)' }
+                        borderColor: '#901E3E',
+                        backgroundColor: '#901E3E',
+                        color: 'white',
+                        py: 2,
+                        fontSize: '1rem',
+                        fontWeight: 600,
+                        borderRadius: 2,
+                        '&:hover': { 
+                          backgroundColor: '#7a1834ff',
+                          borderColor: '#611329ff',
+                        },
+                        transition: 'all 0.3s ease',
                       }}
                       startIcon={<SystemUpdateAlt />}
                       onClick={() => toggleServo(2, 'off')}
@@ -927,20 +1137,24 @@ const LandslideDashboard = () => {
 
                 {/* Manual Rescue Vehicle Button (only show when needed and not auto-triggered) */}
                 {showRescueButton && !autoRescueTriggered && (
-                  <Box textAlign="center" mb={3}>
+                  <Box textAlign="center" mb={4}>
                     <Button
                       variant="contained"
                       size="large"
                       sx={{
-                        backgroundColor: rescueActive ? '#DC143C' : '#cc4a02',
+                        backgroundColor: rescueActive ? '#DC143C' : '#FF7A30',
                         color: 'white',
-                        px: 4,
-                        py: 2,
-                        fontSize: '1.1rem',
+                        px: 5,
+                        py: 2.5,
+                        fontSize: '1.2rem',
                         fontWeight: 600,
+                        borderRadius: 3,
                         '&:hover': {
-                          backgroundColor: rescueActive ? '#b91230' : '#a03902',
+                          backgroundColor: rescueActive ? '#b91230' : '#E65A00',
+                          transform: 'translateY(-2px)',
                         },
+                        transition: 'all 0.3s ease',
+                        boxShadow: '0 4px 16px rgba(255, 122, 48, 0.3)',
                       }}
                       startIcon={<DirectionsCar />}
                       onClick={toggleRescueVehicle}
@@ -958,37 +1172,39 @@ const LandslideDashboard = () => {
                 {/* 🔥 Enhanced Current Status Display */}
                 <Card 
                   sx={{ 
-                    p: 2, 
-                    backgroundColor: '#F5F5DD',
-                    border: '1px solid #34623f',
+                    p: 4, 
+                    background: 'linear-gradient(135deg, rgba(233, 227, 223, 0.8) 0%, rgba(245, 240, 236, 0.8) 100%)',
+                    border: '2px solid rgba(255, 122, 48, 0.3)',
+                    borderRadius: 3,
+                    boxShadow: '0 8px 24px rgba(0, 0, 0, 0.1)',
                   }}
                 >
-                  <Typography variant="h6" sx={{ color: '#34623f', fontWeight: 600, mb: 2 }}>
+                  <Typography variant="h6" sx={{ color: '#000000', fontWeight: 700, mb: 3, textAlign: 'center' }}>
                     Current System Status
                   </Typography>
-                  <Grid container spacing={2}>
+                  <Grid container spacing={4}>
                     <Grid item xs={6}>
-                      <Typography variant="body2" sx={{ color: '#34623f' }}>
+                      <Typography variant="body1" sx={{ color: '#000000', mb: 2, fontWeight: 500, fontSize: '1.1rem' }}>
                         <b>Servo 1:</b> {servo1 === 1 ? '✅ Active' : '❌ Inactive'}
                       </Typography>
-                      <Typography variant="body2" sx={{ color: '#34623f' }}>
+                      <Typography variant="body1" sx={{ color: '#000000', mb: 2, fontWeight: 500, fontSize: '1.1rem' }}>
                         <b>Servo 2:</b> {servo2 === 1 ? '✅ Active' : '❌ Inactive'}
                       </Typography>
-                      <Typography variant="body2" sx={{ color: '#34623f' }}>
+                      <Typography variant="body1" sx={{ color: '#000000', fontWeight: 500, fontSize: '1.1rem' }}>
                         <b>Ground Drop:</b> {currentDropFt.toFixed(2)} ft
                       </Typography>
                     </Grid>
                     <Grid item xs={6}>
-                      <Typography variant="body2" sx={{ color: '#34623f' }}>
+                      <Typography variant="body1" sx={{ color: '#000000', mb: 2, fontWeight: 500, fontSize: '1.1rem' }}>
                         <b>Alert Level:</b> {getStatusLevel().toUpperCase()}
                       </Typography>
-                      <Typography variant="body2" sx={{ color: '#34623f' }}>
+                      <Typography variant="body1" sx={{ color: '#000000', mb: 2, fontWeight: 500, fontSize: '1.1rem' }}>
                         <b>Auto-Rescue:</b> {
                           autoRescueCompleted ? '✅ COMPLETED' :
                           landslideDetected ? '🔴 ARMED' : '🟢 MONITORING'
                         }
                       </Typography>
-                      <Typography variant="body2" sx={{ color: '#34623f' }}>
+                      <Typography variant="body1" sx={{ color: '#000000', fontWeight: 500, fontSize: '1.1rem' }}>
                         <b>Connection:</b> {wsConnected ? 'Real-time' : 'Polling'}
                       </Typography>
                     </Grid>
@@ -998,71 +1214,111 @@ const LandslideDashboard = () => {
             </Grid>
 
             {/* 🔥 Enhanced Logs Section */}
-            <Grid item xs={12} md={6}>
-              <Paper sx={{ p: 3, height: '100%', backgroundColor: '#ffffff', border: '2px solid #1F51FF' }}>
-                <Typography variant="h6" sx={{ mb: 3, color: '#34623f', fontWeight: 600 }}>
-                  Landslide Detection Logs
-                  {wsConnected && (
-                    <Chip 
-                      label="Real-time" 
-                      size="small" 
-                      sx={{ ml: 2, backgroundColor: '#66FF00', color: 'white' }}
-                    />
-                  )}
-                  {/* 🚨 Auto-rescue indicator */}
-                  {landslideDetected && !autoRescueCompleted && (
-                    <Chip 
-                      label="AUTO-RESCUE ARMED" 
-                      size="small" 
-                      sx={{ 
-                        ml: 1, 
-                        backgroundColor: '#DC143C', 
-                        color: 'white',
-                        fontWeight: 'bold'
-                      }}
-                    />
-                  )}
-                  {autoRescueCompleted && (
-                    <Chip 
-                      label="AUTO-RESCUE COMPLETED" 
-                      size="small" 
-                      sx={{ 
-                        ml: 1, 
-                        backgroundColor: '#1F51FF', 
-                        color: 'white',
-                        fontWeight: 'bold'
-                      }}
-                    />
-                  )}
-                </Typography>
+            <Grid item xs={12} md={6} lg={7} sx={{ display: 'flex', justifyContent: 'center' }}>
+              <Paper 
+                sx={{ 
+                  p: 4, 
+                  backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                  backdropFilter: 'blur(10px)',
+                  border: '2px solid rgba(70, 92, 136, 0.3)',
+                  borderRadius: 3,
+                  boxShadow: '0 12px 40px rgba(0, 0, 0, 0.1)',
+                  minHeight: '700px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  width: '100%',
+                  maxWidth: '800px',
+                }}
+              >
+                <Box 
+                  display="flex" 
+                  alignItems="center" 
+                  justifyContent="center" 
+                  mb={4}
+                  sx={{
+                    background: 'linear-gradient(135deg, rgba(70, 92, 136, 0.1) 0%, rgba(70, 92, 136, 0.15) 100%)',
+                    borderRadius: 3,
+                    px: 3,
+                    py: 2,
+                    border: '2px solid rgba(70, 92, 136, 0.2)',
+                  }}
+                >
+                  <Typography variant="h5" sx={{ color: '#000000', fontWeight: 700, textAlign: 'center' }}>
+                    Landslide Detection Logs
+                    {wsConnected && (
+                      <Chip 
+                        label="Real-time" 
+                        size="medium" 
+                        sx={{ 
+                          ml: 2, 
+                          backgroundColor: '#4caf50', 
+                          color: 'white',
+                          fontWeight: 600,
+                          px: 2,
+                        }}
+                      />
+                    )}
+                    {/* 🚨 Auto-rescue indicator */}
+                    {landslideDetected && !autoRescueCompleted && (
+                      <Chip 
+                        label="AUTO-RESCUE ARMED" 
+                        size="medium" 
+                        sx={{ 
+                          ml: 1, 
+                          backgroundColor: '#DC143C', 
+                          color: 'white',
+                          fontWeight: 'bold'
+                        }}
+                      />
+                    )}
+                    {autoRescueCompleted && (
+                      <Chip 
+                        label="AUTO-RESCUE COMPLETED" 
+                        size="medium" 
+                        sx={{ 
+                          ml: 1, 
+                          backgroundColor: '#465C88', 
+                          color: 'white',
+                          fontWeight: 'bold'
+                        }}
+                      />
+                    )}
+                  </Typography>
+                </Box>
                 
                 {loading ? (
-                  <Box display="flex" justifyContent="center" alignItems="center" minHeight="300px">
-                    <CircularProgress sx={{ color: '#cc4a02' }} />
+                  <Box display="flex" justifyContent="center" alignItems="center" flex={1} minHeight="400px">
+                    <CircularProgress sx={{ color: '#FF7A30', size: 60 }} />
                   </Box>
                 ) : (
                   <Paper 
-                    elevation={2} 
+                    elevation={3} 
                     sx={{ 
-                      maxHeight: '400px', 
+                      flex: 1,
+                      maxHeight: '500px', 
                       overflow: 'auto',
                       backgroundColor: '#F5F5DD',
+                      borderRadius: 2,
+                      border: '1px solid rgba(70, 92, 136, 0.2)',
                     }}
                   >
-                    <List>
+                    <List sx={{ p: 0 }}>
                       {logs.length > 0 ? (
                         logs.map((log, index) => (
                           <ListItem 
                             key={index}
                             sx={{
                               borderBottom: '1px solid #e0e0e0',
-                              '&:hover': { backgroundColor: 'rgba(204, 74, 2, 0.05)' }
+                              py: 2,
+                              px: 3,
+                              '&:hover': { backgroundColor: 'rgba(255, 122, 48, 0.05)' },
+                              '&:last-child': { borderBottom: 'none' }
                             }}
                           >
                             <ListItemText
                               primary={
-                                <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
-                                  <Typography sx={{ color: '#34623f', fontWeight: 600 }}>
+                                <Box display="flex" alignItems="center" gap={2} flexWrap="wrap" mb={1}>
+                                  <Typography sx={{ color: '#34623f', fontWeight: 600, fontSize: '1rem' }}>
                                     Status: {log.status || 'normal'}
                                   </Typography>
                                   <Chip
@@ -1070,9 +1326,10 @@ const LandslideDashboard = () => {
                                     label={`S1:${log.servo1 || 1} S2:${log.servo2 || 1}`}
                                     sx={{
                                       backgroundColor: (log.servo1 === 0 && log.servo2 === 0) ? '#DC143C' :
-                                                     (log.servo1 === 0 || log.servo2 === 0) ? '#cc4a02' : '#66FF00',
+                                                     (log.servo1 === 0 || log.servo2 === 0) ? '#FF7A30' : '#4caf50',
                                       color: 'white',
-                                      fontSize: '0.7rem'
+                                      fontSize: '0.75rem',
+                                      fontWeight: 600,
                                     }}
                                   />
                                   {/* 🔥 Feet Data Chip with Auto-Rescue Indicator */}
@@ -1082,7 +1339,7 @@ const LandslideDashboard = () => {
                                     sx={{
                                       backgroundColor: (log.drop_ft || 0) >= LANDSLIDE_DETECTION.CRITICAL_DROP_THRESHOLD ? '#DC143C' : getStatusColor(getDropSeverity(log.drop_ft || 0)),
                                       color: 'white',
-                                      fontSize: '0.7rem',
+                                      fontSize: '0.75rem',
                                       fontWeight: 600
                                     }}
                                   />
@@ -1090,17 +1347,17 @@ const LandslideDashboard = () => {
                               }
                               secondary={
                                 <Box>
-                                  <Typography variant="body2" sx={{ color: '#34623f' }}>
+                                  <Typography variant="body2" sx={{ color: '#34623f', mb: 1, fontWeight: 500 }}>
                                     X: {(log.accel_x || 0).toFixed(2)} | Y: {(log.accel_y || 0).toFixed(2)} | Z: {(log.accel_z || 0).toFixed(2)}
                                   </Typography>
                                   {/* 🔥 Enhanced Feet Data Display with Auto-Rescue Info */}
-                                  <Typography variant="body2" sx={{ color: '#cc4a02', fontWeight: 600 }}>
+                                  <Typography variant="body2" sx={{ color: '#FF7A30', fontWeight: 600 }}>
                                     📏 Drop: {(log.drop_ft || 0).toFixed(2)} ft | Height: {(log.sensor_height_ft || 10).toFixed(1)} ft
                                     {(log.drop_ft || 0) >= LANDSLIDE_DETECTION.CRITICAL_DROP_THRESHOLD && 
                                       <span style={{ color: '#DC143C' }}> | 🚨 AUTO-RESCUE TRIGGER (ONE-TIME)</span>
                                     }
                                   </Typography>
-                                  <Typography variant="body2" sx={{ color: '#666666' }}>
+                                  <Typography variant="body2" sx={{ color: '#666666', fontSize: '0.9rem' }}>
                                     {new Date(log.created_at || log.timestamp).toLocaleString()}
                                   </Typography>
                                 </Box>
@@ -1109,12 +1366,15 @@ const LandslideDashboard = () => {
                           </ListItem>
                         ))
                       ) : (
-                        <ListItem>
+                        <ListItem sx={{ py: 6 }}>
                           <ListItemText 
                             primary={
-                              <Typography sx={{ color: '#34623f', textAlign: 'center' }}>
-                                No logs available. Waiting for data...
-                              </Typography>
+                              <Box textAlign="center">
+                                <Typography sx={{ color: '#34623f', fontSize: '1.1rem', fontWeight: 500 }}>
+                                  No logs available. Waiting for data...
+                                </Typography>
+                                <CircularProgress sx={{ mt: 2, color: '#FF7A30' }} size={24} />
+                              </Box>
                             }
                           />
                         </ListItem>
@@ -1125,17 +1385,18 @@ const LandslideDashboard = () => {
               </Paper>
             </Grid>
           </Grid>
-        </Container>
-      </Box>
+          </Box>
+        
 
-      {/* 🚨 CSS for Pulse Animation */}
-      <style jsx global>{`
-        @keyframes pulse {
-          0% { opacity: 1; }
-          50% { opacity: 0.7; }
-          100% { opacity: 1; }
-        }
-      `}</style>
+        {/* 🚨 CSS for Pulse Animation */}
+        <style jsx global>{`
+          @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+          }
+        `}</style>
+      </Container>
     </ThemeProvider>
   );
 };
