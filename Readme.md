@@ -15,3 +15,8 @@ Backend Instrcutions
 --cd backend
 --uvicorn server:app --host 0.0.0.0 --port 5000 --reload
 
+Mobile Instructions
+--cd mobile
+--npm install
+--npx expo start
+
